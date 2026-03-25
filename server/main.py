@@ -8,32 +8,30 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import asyncio
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager  # noqa: E402
 
-import torch
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI, Request  # noqa: E402
+from fastapi.responses import HTMLResponse, JSONResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.templating import Jinja2Templates  # noqa: E402
 
-from auth_router import router as auth_router
-from project_router import router as project_router, set_val_dataloader
-from ngrok_tunnel import start_ngrok_tunnel, get_tunnel_url
-from db_handler import read_db, write_db
-from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA
+from auth_router import router as auth_router  # noqa: E402
+from project_router import router as project_router, set_val_dataloader  # noqa: E402
+from ngrok_tunnel import start_ngrok_tunnel, get_tunnel_url  # noqa: E402
+from db_handler import read_db, write_db  # noqa: E402
+from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA  # noqa: E402
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-SERVER_HOST     = os.environ.get("SERVER_HOST", "0.0.0.0")
-SERVER_PORT     = int(os.environ.get("SERVER_PORT", "8000"))
+SERVER_HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
+SERVER_PORT = int(os.environ.get("SERVER_PORT", "8000"))
 NGROK_AUTH_TOKEN = os.environ.get("NGROK_AUTH_TOKEN", "")
-SERVER_VERSION  = "1.0.0"
+SERVER_VERSION = "1.0.0"
 
 # ─── Server-side validation data ─────────────────────────────────────────────
 VAL_CSV_PATH = os.environ.get("VAL_CSV_PATH", "")  # optional held-out CSV
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
-STATIC_DIR    = os.path.join(os.path.dirname(__file__), "static")
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -76,7 +74,7 @@ async def lifespan(app: FastAPI):
 
 def _ensure_default_project():
     """Create a default demo project if no projects exist."""
-    import uuid, datetime
+    import uuid, datetime  # noqa: E401
     db = read_db()
     if not db.get("projects"):
         proj = {

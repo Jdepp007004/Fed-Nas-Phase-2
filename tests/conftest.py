@@ -6,7 +6,7 @@ Shared pytest fixtures for the FL Platform test suite.
 import os
 import sys
 import json
-import tempfile
+import tempfile  # noqa: F401
 import numpy as np
 import pandas as pd
 import pytest
@@ -18,7 +18,7 @@ for sub in [ROOT, os.path.join(ROOT, "server"), os.path.join(ROOT, "client")]:
         sys.path.insert(0, sub)
 
 # ── Set dummy encryption key before any imports ───────────────────────────────
-import base64
+import base64  # noqa: E402
 os.environ["FL_ENCRYPTION_KEY"] = base64.b64encode(b"test_key_32bytes_padding_000000!").decode()
 os.environ["JWT_SECRET"] = "test_jwt_secret"
 
@@ -47,11 +47,11 @@ def tcga_csv_path(tmp_path_factory):
             data[col] = rng.choice(["a", "b", "c"], n)
 
     # Force target columns to valid values
-    data["vital_status"]      = rng.choice(["alive", "dead"], n)
+    data["vital_status"] = rng.choice(["alive", "dead"], n)
     data["treatment_outcome"] = rng.choice(
         ["complete response", "partial response", "stable disease", "progressive disease"], n
     )
-    data["overall_survival"]  = rng.uniform(0, 5000, n)
+    data["overall_survival"] = rng.uniform(0, 5000, n)
 
     df = pd.DataFrame(data)
     path = tmp_path_factory.mktemp("data") / "tcga_test.csv"

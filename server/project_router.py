@@ -6,24 +6,21 @@ Owner: Sunishka Sarkar
 
 import os
 import sys
-import uuid
-import datetime
-import copy
 import threading
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import torch
-import numpy as np
-from fastapi import APIRouter, Depends, BackgroundTasks, Header
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+import torch  # noqa: E402
+import numpy as np  # noqa: E402
+from fastapi import APIRouter, Depends, BackgroundTasks, Header  # noqa: E402
+from fastapi.responses import JSONResponse  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 
-from db_handler import read_db, write_db, get_project, update_project, append_round_history
-from auth_router import verify_jwt
-from aggregation import aggregate_fedavg, update_with_momentum, validate_global_model, EmptyRoundError
-from nas_controller import recommend_subnet_depth, evaluate_architecture_candidates
-from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA
+from db_handler import read_db, write_db, get_project, update_project, append_round_history  # noqa: E402
+from auth_router import verify_jwt  # noqa: E402
+from aggregation import aggregate_fedavg, update_with_momentum, validate_global_model, EmptyRoundError  # noqa: E402
+from nas_controller import recommend_subnet_depth, evaluate_architecture_candidates  # noqa: E402
+from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA  # noqa: E402
 
 # ── Path to models directory ──────────────────────────────────────────────────
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")

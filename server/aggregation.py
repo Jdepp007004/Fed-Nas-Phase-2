@@ -8,9 +8,8 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import copy
-import datetime
-import numpy as np
+import datetime  # noqa: E402
+import numpy as np  # noqa: E402
 
 
 # ─── Custom Exceptions ────────────────────────────────────────────────────────
@@ -65,8 +64,8 @@ def aggregate_fedavg(client_updates: list, sample_counts: list) -> dict:
             continue
 
         contrib_weights = np.array([w for w, _ in contributors], dtype=np.float64)
-        contrib_arrays  = [arr for _, arr in contributors]
-        total_contrib   = contrib_weights.sum()
+        contrib_arrays = [arr for _, arr in contributors]
+        total_contrib = contrib_weights.sum()
 
         # Weighted average
         weighted_sum = np.zeros_like(contrib_arrays[0], dtype=np.float64)
@@ -103,7 +102,7 @@ def update_with_momentum(
     -------
     tuple: (new_global_weights: dict, updated_velocity: dict)
     """
-    new_global  = {}
+    new_global = {}
     new_velocity = {}
 
     all_keys = set(current_global) | set(fedavg_aggregate)
@@ -115,15 +114,15 @@ def update_with_momentum(
 
         # Ensure shape compatibility
         if cur.shape != agg.shape:
-            new_global[key]   = agg.astype(np.float32)
+            new_global[key] = agg.astype(np.float32)
             new_velocity[key] = np.zeros_like(agg, dtype=np.float32)
             continue
 
-        delta       = agg - cur
-        new_vel     = momentum * vel + (1.0 - momentum) * delta
-        new_w       = cur + new_vel
+        delta = agg - cur
+        new_vel = momentum * vel + (1.0 - momentum) * delta
+        new_w = cur + new_vel
 
-        new_global[key]   = new_w.astype(np.float32)
+        new_global[key] = new_w.astype(np.float32)
         new_velocity[key] = new_vel.astype(np.float32)
 
     return new_global, new_velocity

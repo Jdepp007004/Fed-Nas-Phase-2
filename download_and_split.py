@@ -16,13 +16,13 @@ Output:
 """
 
 import os
-import json
+import json  # noqa: F401
 import math
 import requests
 import pandas as pd
 import numpy as np
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split  # noqa: F401
 
 # ── GDC API ──────────────────────────────────────────────────────────────────
 GDC_CASES_URL = "https://api.gdc.cancer.gov/cases"
@@ -226,7 +226,7 @@ def _flatten_case(case: dict) -> dict:
     for k, v in treat.items():
         row[f"treatments.{k}"] = v
 
-    row["case_id"]      = case.get("case_id", "")
+    row["case_id"] = case.get("case_id", "")
     row["primary_site"] = case.get("primary_site", "")
 
     return row
@@ -244,7 +244,7 @@ def download_tcga(max_cases: int = 10000) -> pd.DataFrame:
 
     for page in range(pages):
         offset = page * page_size
-        size   = min(page_size, max_cases - offset)
+        size = min(page_size, max_cases - offset)
 
         params = {
             "fields": ",".join(GDC_CLINICAL_FIELDS),
@@ -403,11 +403,11 @@ if __name__ == "__main__":
     print("=" * 60)
     for i, path in enumerate(paths, start=1):
         print(f"\n  Teammate {i}:  {path}")
-        print(f"  python client/client_app.py \\")
-        print(f"    --server  https://YOUR_NGROK_URL \\")
+        print("  python client/client_app.py \\")
+        print("    --server  https://YOUR_NGROK_URL \\")
         print(f"    --username hospital_{i} \\")
         print(f"    --password secret{i} \\")
         print(f"    --hospital \"Hospital {i}\" \\")
         print(f"    --email admin{i}@hospital.org \\")
         print(f"    --csv {path} \\")
-        print(f"    --proj 193b8223-311e-4de4-809d-68d431da46ab")
+        print("    --proj 193b8223-311e-4de4-809d-68d431da46ab")

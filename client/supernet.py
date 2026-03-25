@@ -8,13 +8,11 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from typing import Iterator
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
+import numpy as np  # noqa: E402
 
-from shared.model_schema import INPUT_DIM, MAX_DEPTH, HIDDEN_DIM, NUM_TOXICITY_CLASSES
+from shared.model_schema import INPUT_DIM, MAX_DEPTH, HIDDEN_DIM, NUM_TOXICITY_CLASSES  # noqa: E402
 
 
 # ─── Supernet ────────────────────────────────────────────────────────────────

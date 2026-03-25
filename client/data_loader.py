@@ -8,17 +8,16 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import warnings
-import numpy as np
-import pandas as pd
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
-import torch
-from torch.utils.data import DataLoader, TensorDataset
+import torch  # noqa: E402
+from torch.utils.data import DataLoader, TensorDataset  # noqa: E402
 
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler  # noqa: E402
+from sklearn.model_selection import StratifiedShuffleSplit  # noqa: E402
 
-from shared.model_schema import (
+from shared.model_schema import (  # noqa: E402
     REQUIRED_COLUMNS,
     TARGET_COLUMNS,
     FEATURE_RANGES,
@@ -145,7 +144,7 @@ def preprocess_features(df: pd.DataFrame, schema: dict) -> tuple:
 
     # ── Min-max normalise numerical columns ──────────────────────────────────
     if num_cols:
-        scaler = MinMaxScaler()
+        scaler = MinMaxScaler()  # noqa: F841
         num_array = feature_df[num_cols].values.astype(np.float32)
         # Use schema-defined ranges if available, else fit from data
         for idx, col in enumerate(num_cols):
@@ -236,7 +235,7 @@ def create_federated_dataloader(
     -------
     tuple: (train_loader: DataLoader, val_loader: DataLoader)
     """
-    N = len(X)
+    N = len(X)  # noqa: F841
     y_bin = y["binary"].astype(np.int32)
 
     # Stratified split on binary target

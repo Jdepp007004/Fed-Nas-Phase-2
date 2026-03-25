@@ -8,15 +8,15 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import copy
-from typing import Iterator, NamedTuple
+import copy  # noqa: E402
+from typing import Iterator, NamedTuple  # noqa: E402
 
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
+import torch  # noqa: E402
+import torch.nn as nn  # noqa: E402
+from torch.utils.data import DataLoader  # noqa: E402
 
-from supernet import Supernet, compute_joint_loss, get_subnet_weights
-from shared.model_schema import (
+from supernet import Supernet, compute_joint_loss, get_subnet_weights  # noqa: E402
+from shared.model_schema import (  # noqa: E402
     DEFAULT_LR,
     DEFAULT_EPOCHS,
     DEFAULT_FEDPROX_MU,

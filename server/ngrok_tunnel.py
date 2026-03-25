@@ -6,7 +6,7 @@ Owner: Sunishka Sarkar
 from __future__ import annotations
 
 import atexit
-import os
+import os  # noqa: F401
 import time
 
 # Module-level singleton for the active public URL

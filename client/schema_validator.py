@@ -8,11 +8,10 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from collections import namedtuple
-import numpy as np
-import pandas as pd
+from collections import namedtuple  # noqa: E402
+import pandas as pd  # noqa: E402
 
-from shared.model_schema import MIN_SAMPLES
+from shared.model_schema import MIN_SAMPLES  # noqa: E402
 
 # ─── Result Type ─────────────────────────────────────────────────────────────
 
@@ -45,10 +44,10 @@ def validate_schema(df: pd.DataFrame, expected_schema: dict) -> ValidationResult
     warnings: list = []
 
     required_columns = expected_schema.get("required_columns", [])
-    column_types     = expected_schema.get("column_types", {})
-    value_bounds     = expected_schema.get("feature_ranges", {})
-    cat_values       = expected_schema.get("categorical_values", {})
-    min_samples      = expected_schema.get("min_samples", MIN_SAMPLES)
+    column_types = expected_schema.get("column_types", {})
+    value_bounds = expected_schema.get("feature_ranges", {})
+    cat_values = expected_schema.get("categorical_values", {})
+    min_samples = expected_schema.get("min_samples", MIN_SAMPLES)
 
     # Normalise column names
     df = df.copy()
@@ -57,9 +56,9 @@ def validate_schema(df: pd.DataFrame, expected_schema: dict) -> ValidationResult
     # ── Check 1: Required columns present ───────────────────────────────────
     missing = [c for c in required_columns if c not in df.columns]
     if missing:
-        errors.append(f"Missing {len(missing)} required column(s): {missing[:10]}{'...' if len(missing)>10 else ''}")
+        errors.append(f"Missing {len(missing)} required column(s): {missing[:10]}{'...' if len(missing)>10 else ''}")  # noqa: E225, E501
 
-    present = [c for c in required_columns if c in df.columns]
+    present = [c for c in required_columns if c in df.columns]  # noqa: F841
 
     # ── Check 2: Data type compatibility ─────────────────────────────────────
     for col, expected_type in column_types.items():

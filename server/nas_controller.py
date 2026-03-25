@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from shared.model_schema import MAX_DEPTH, DEFAULT_ACTIVE_DEPTH
+from shared.model_schema import MAX_DEPTH, DEFAULT_ACTIVE_DEPTH  # noqa: E402
 
 
 # ─── Depth Lookup Table ───────────────────────────────────────────────────────
@@ -46,15 +46,15 @@ def recommend_subnet_depth(client_id: str, client_profile: dict) -> int:
     -------
     int — recommended active_depth in range [2, MAX_DEPTH]
     """
-    ram_gb    = float(client_profile.get("ram_gb", 4))
-    has_gpu   = bool(client_profile.get("gpu_available", False))
+    ram_gb = float(client_profile.get("ram_gb", 4))
+    has_gpu = bool(client_profile.get("gpu_available", False))
     data_size = int(client_profile.get("local_data_size", 0))
 
     depth = 2  # conservative fallback
     for min_ram, needs_gpu, min_data, max_data, d in _DEPTH_LOOKUP:
-        gpu_ok   = (not needs_gpu) or has_gpu
-        ram_ok   = ram_gb >= min_ram
-        data_ok  = min_data <= data_size <= max_data
+        gpu_ok = (not needs_gpu) or has_gpu
+        ram_ok = ram_gb >= min_ram
+        data_ok = min_data <= data_size <= max_data
         if ram_ok and gpu_ok and data_ok:
             depth = d
             break
@@ -99,7 +99,7 @@ def evaluate_architecture_candidates(
 
         # Mini-aggregate for this depth group
         sample_counts = [u.get("num_samples", 100) for u in updates]
-        weight_dicts  = [u.get("weights", {}) if isinstance(u, dict) else u for u in updates]
+        weight_dicts = [u.get("weights", {}) if isinstance(u, dict) else u for u in updates]
 
         try:
             mini_agg = aggregate_fedavg(weight_dicts, sample_counts)

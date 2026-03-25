@@ -6,8 +6,8 @@ Owner: Nikhil Garuda
 
 import matplotlib
 matplotlib.use("TkAgg")  # fallback: safe for most desktops; override via env if needed
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.gridspec as gridspec  # noqa: E402
 
 
 # ─── Dashboard Initialisation ────────────────────────────────────────────────
@@ -31,9 +31,9 @@ def init_metrics_dashboard() -> tuple:
 
     gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
 
-    ax_rmse      = fig.add_subplot(gs[0, 0])
-    ax_tox_acc   = fig.add_subplot(gs[0, 1])
-    ax_auc       = fig.add_subplot(gs[1, 0])
+    ax_rmse = fig.add_subplot(gs[0, 0])
+    ax_tox_acc = fig.add_subplot(gs[0, 1])
+    ax_auc = fig.add_subplot(gs[1, 0])
     ax_local_loss = fig.add_subplot(gs[1, 1])
 
     # Initial styling
@@ -69,10 +69,10 @@ def update_global_metrics(axes: dict, round_history: list) -> None:
     if not round_history:
         return
 
-    rounds    = [r["round"] for r in round_history]
+    rounds = [r["round"] for r in round_history]
     rmse_vals = [r.get("global_val_rmse", 0) for r in round_history]
-    tox_vals  = [r.get("global_tox_accuracy", 0) for r in round_history]
-    auc_vals  = [r.get("global_auc", 0) for r in round_history]
+    tox_vals = [r.get("global_tox_accuracy", 0) for r in round_history]
+    auc_vals = [r.get("global_auc", 0) for r in round_history]
 
     _redraw_ax(axes["rmse"],    rounds, rmse_vals, "RMSE",           "Global Val RMSE",       "royalblue")
     _redraw_ax(axes["tox_acc"], rounds, tox_vals,  "Accuracy",       "Toxicity Accuracy",     "darkorange")

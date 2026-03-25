@@ -5,12 +5,12 @@ Run with: pytest tests/ -v --cov=. --cov-report=term-missing
 """
 
 import os
-import sys
-import json
-import copy
-import tempfile
+import sys  # noqa: F401
+import json  # noqa: F401
+import copy  # noqa: F401
+import tempfile  # noqa: F401
 import threading
-import importlib
+import importlib  # noqa: F401
 
 import numpy as np
 import pytest
@@ -105,8 +105,8 @@ class TestSupernet:
         for depth in range(1, net.max_depth + 1):
             out = net.forward_multi_head(x, depth)
             assert out["regression"].shape == (8, 1)
-            assert out["toxicity"].shape   == (8, net.num_toxicity_classes)
-            assert out["binary"].shape     == (8, 1)
+            assert out["toxicity"].shape == (8, net.num_toxicity_classes)
+            assert out["binary"].shape == (8, 1)
 
     def test_invalid_depth_raises(self, small_supernet):
         x = torch.randn(4, 32)
@@ -189,14 +189,14 @@ class TestFedProx:
     def test_penalty_zero_when_models_equal(self, small_supernet):
         from train_loop import apply_fedprox_penalty
         net = small_supernet
-        local_params  = list(net.parameters())
+        local_params = list(net.parameters())
         global_params = [p.clone().detach() for p in local_params]
         penalty = apply_fedprox_penalty(iter(local_params), iter(global_params), mu=0.01)
         assert penalty.item() < 1e-6
 
     def test_penalty_positive_when_models_differ(self, small_supernet):
         from train_loop import apply_fedprox_penalty, Supernet
-        local  = Supernet(input_dim=32, max_depth=3, hidden_dim=16, num_toxicity_classes=4)
+        local = Supernet(input_dim=32, max_depth=3, hidden_dim=16, num_toxicity_classes=4)
         with torch.no_grad():
             for p in local.parameters():
                 p.fill_(5.0)
@@ -252,7 +252,7 @@ class TestFedAvg:
         """Clients with different subnets (missing keys) should still aggregate."""
         from aggregation import aggregate_fedavg
         u1 = {"backbone.0.weight": np.ones((4,), dtype=np.float32),
-               "head.weight":      np.ones((4,), dtype=np.float32)}
+               "head.weight":      np.ones((4,), dtype=np.float32)}  # noqa: E127
         u2 = {"head.weight":       np.full((4,), 3.0, dtype=np.float32)}  # shallower client
         result = aggregate_fedavg([u1, u2], [100, 100])
         # head.weight should be average of 1.0 and 3.0 = 2.0
@@ -267,8 +267,8 @@ class TestFedAvg:
 class TestMomentum:
     def test_converges_toward_aggregate(self):
         from aggregation import update_with_momentum
-        current  = {"w": np.zeros((4,), dtype=np.float32)}
-        agg      = {"w": np.full((4,), 10.0, dtype=np.float32)}
+        current = {"w": np.zeros((4,), dtype=np.float32)}
+        agg = {"w": np.full((4,), 10.0, dtype=np.float32)}
         velocity = {}
         new_g, vel = update_with_momentum(current, agg, momentum=0.9, velocity=velocity)
         # New global should be closer to 10 than 0
@@ -276,8 +276,8 @@ class TestMomentum:
 
     def test_velocity_persists_across_rounds(self):
         from aggregation import update_with_momentum
-        current  = {"w": np.zeros((4,), dtype=np.float32)}
-        agg      = {"w": np.full((4,), 10.0, dtype=np.float32)}
+        current = {"w": np.zeros((4,), dtype=np.float32)}
+        agg = {"w": np.full((4,), 10.0, dtype=np.float32)}
         velocity = {}
         g1, vel1 = update_with_momentum(current, agg, 0.9, velocity)
         g2, vel2 = update_with_momentum(g1,      agg, 0.9, vel1)
@@ -291,7 +291,7 @@ class TestMomentum:
 class TestNASController:
     def test_gpu_high_ram_gets_high_depth(self):
         from nas_controller import recommend_subnet_depth
-        d = recommend_subnet_depth("c1", {"ram_gb": 64, "cpu_cores": 16, "gpu_available": True, "local_data_size": 5000})
+        d = recommend_subnet_depth("c1", {"ram_gb": 64, "cpu_cores": 16, "gpu_available": True, "local_data_size": 5000})  # noqa: E501
         assert d >= 5
 
     def test_low_ram_no_gpu_gets_low_depth(self):
@@ -303,7 +303,7 @@ class TestNASController:
         from nas_controller import recommend_subnet_depth
         from shared.model_schema import MAX_DEPTH
         for ram in [2, 4, 8, 16, 32]:
-            d = recommend_subnet_depth("cx", {"ram_gb": ram, "cpu_cores": 4, "gpu_available": False, "local_data_size": 1000})
+            d = recommend_subnet_depth("cx", {"ram_gb": ram, "cpu_cores": 4, "gpu_available": False, "local_data_size": 1000})  # noqa: E501
             assert 2 <= d <= MAX_DEPTH
 
     def test_different_clients_cached_independently(self):
@@ -382,8 +382,8 @@ class TestDBHandler:
                 errors.append(e)
 
         threads = [threading.Thread(target=write_something, args=(i,)) for i in range(10)]
-        for t in threads: t.start()
-        for t in threads: t.join()
+        for t in threads: t.start()  # noqa: E701
+        for t in threads: t.join()  # noqa: E701
         assert not errors, f"Thread safety errors: {errors}"
 
 

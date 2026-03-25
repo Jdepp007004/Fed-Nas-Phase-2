@@ -8,13 +8,11 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import json
-import time
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+import requests  # noqa: E402
+from requests.adapters import HTTPAdapter  # noqa: E402
+from urllib3.util.retry import Retry  # noqa: E402
 
-from shared.encryption import encrypt_weights, decrypt_weights
+from shared.encryption import encrypt_weights  # noqa: E402
 
 
 # ─── Custom Exceptions ────────────────────────────────────────────────────────
@@ -22,11 +20,14 @@ from shared.encryption import encrypt_weights, decrypt_weights
 class ServerUnreachableError(Exception):
     """Raised when the server is not reachable after all retries."""
 
+
 class AuthError(Exception):
     """Raised on 401/403 HTTP responses."""
 
+
 class SchemaError(Exception):
     """Raised on 422 Unprocessable Entity (schema mismatch)."""
+
 
 class RoundConflictError(Exception):
     """Raised on 409 Conflict (wrong round_id submitted)."""

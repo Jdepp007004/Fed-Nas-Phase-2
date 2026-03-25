@@ -8,17 +8,15 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import time
-import json
-import argparse
-import threading
+import time  # noqa: E402
+import argparse  # noqa: E402
 
-from api_client import APIClient, ServerUnreachableError, AuthError
-from supernet import Supernet, load_global_weights
-from train_loop import run_local_training, TrainConfig
-from data_loader import build_dataloaders_from_csv
-from schema_validator import validate_schema, format_validation_report
-from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA, DEFAULT_BATCH_SIZE
+from api_client import APIClient, ServerUnreachableError, AuthError  # noqa: E402
+from supernet import Supernet, load_global_weights  # noqa: E402
+from train_loop import run_local_training, TrainConfig  # noqa: E402
+from data_loader import build_dataloaders_from_csv  # noqa: E402
+from schema_validator import validate_schema, format_validation_report  # noqa: E402
+from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA, DEFAULT_BATCH_SIZE  # noqa: E402
 
 
 # ─── CLI ──────────────────────────────────────────────────────────────────────
@@ -109,7 +107,7 @@ def main():
                 approved = True
                 break
             # Fallback: try fetching model — 403 means still pending, 200 means approved
-            model_resp = client.fetch_global_model(args.proj)
+            model_resp = client.fetch_global_model(args.proj)  # noqa: F841
             approved = True
         except AuthError:
             pass  # still pending
@@ -139,7 +137,7 @@ def main():
         print("[*] Fetching global model…")
         model_data = client.fetch_global_model(args.proj)
         current_round = model_data["round"]
-        active_depth  = model_data.get("active_depth", active_depth)
+        active_depth = model_data.get("active_depth", active_depth)
         global_weights = model_data["weights"]
         print(f"[+] Round {current_round} | Active depth: {active_depth}")
 
@@ -185,7 +183,7 @@ def main():
                 pass
 
         # Wait before next round
-        print(f"[*] Waiting for next round… (sleeping 5s)")
+        print("[*] Waiting for next round… (sleeping 5s)")
         time.sleep(5)
 
 

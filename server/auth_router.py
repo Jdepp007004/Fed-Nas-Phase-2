@@ -14,12 +14,12 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from db_handler import read_db, write_db, get_user
+from db_handler import read_db, write_db, get_user  # noqa: F401
 
 # Environment variable key for JWT signing
 import os
 JWT_SECRET = os.environ.get("JWT_SECRET", "dev_secret_change_in_production")
-JWT_ALGO   = "HS256"
+JWT_ALGO = "HS256"
 JWT_EXP_HOURS = 24
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
