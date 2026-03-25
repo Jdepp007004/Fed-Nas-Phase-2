@@ -39,6 +39,7 @@ _buffer_lock = threading.Lock()
 # ── Server-side validation dataloader (created at startup by main.py) ────────
 _val_dataloader = None
 
+
 def set_val_dataloader(dl):
     global _val_dataloader
     _val_dataloader = dl
@@ -150,8 +151,6 @@ async def get_global_model(
         weights_json = {}
 
     # Per-client depth assignment
-    db = read_db()
-    db = read_db()
     # Find user profile to check if they have specific settings or hardware info
     # _user = next((u for u in db["users"] if u["user_id"] == user_id), {})
     active_depth = proj.get("recommended_depth", MODEL_CONFIG["max_depth"])
