@@ -35,6 +35,7 @@ def _get_key() -> bytes:
         "FL_ENCRYPTION_KEY not set – using insecure all-zeros key. "
         "Set this env variable in production.",
         RuntimeWarning,
+        stacklevel=2,
     )
     return b"\x00" * 32
 

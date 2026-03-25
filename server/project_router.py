@@ -252,7 +252,7 @@ async def approve_client(
     if current_user["sub"] != proj.get("admin_id"):
         raise _http_error(403, "Only the project admin can approve clients.")
 
-    pending   = proj.get("pending_clients", [])
+    pending = proj.get("pending_clients", [])
     connected = proj.get("connected_clients", [])
 
     if user_id_to_approve not in pending:
@@ -298,7 +298,7 @@ def round_lifecycle(proj_id: str, updates_buffer: list, db_snapshot: dict) -> No
         else:
             current_global = {}
 
-        weight_dicts  = [u["weights"] for u in updates_buffer]
+        weight_dicts = [u["weights"] for u in updates_buffer]
         sample_counts = [u["num_samples"] for u in updates_buffer]
 
         # ── Step 1: FedAvg ───────────────────────────────────────────────────

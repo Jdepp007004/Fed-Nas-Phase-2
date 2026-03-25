@@ -6,10 +6,10 @@ Shared between server and client to ensure identical feature spaces.
 
 # ─── Model Architecture Constants ────────────────────────────────────────────
 
-INPUT_DIM = 512          # Number of input features (post-preprocessing TCGA)
-MAX_DEPTH = 6            # Maximum backbone layers (range 2–8)
-HIDDEN_DIM = 256         # Width of each hidden layer
-NUM_TOXICITY_CLASSES = 4 # Toxicity severity classes (grade 1–4)
+INPUT_DIM = 512  # Number of input features (post-preprocessing TCGA)
+MAX_DEPTH = 6  # Maximum backbone layers (range 2–8)
+HIDDEN_DIM = 256  # Width of each hidden layer
+NUM_TOXICITY_CLASSES = 4  # Toxicity severity classes (grade 1–4)
 
 DEFAULT_ACTIVE_DEPTH = 4  # Default NAS depth assigned before profiling
 
