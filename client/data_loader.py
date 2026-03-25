@@ -240,7 +240,7 @@ def create_federated_dataloader(
 
     # Stratified split on binary target
     sss = StratifiedShuffleSplit(n_splits=1, test_size=split, random_state=42)
-    for train_idx, val_idx in sss.split(X, y_bin):
+    for train_idx, val_idx in sss.split(X, y_bin):  # noqa: B007
         pass
 
     def make_ds(idx):
