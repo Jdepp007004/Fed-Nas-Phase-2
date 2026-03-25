@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Secrets — NEVER commit these
+.env
+*.env
+
+# Data — too large / sensitive for git
+data/
+server/models/
+
+# Database (auto-recreated on server start)
+server/database.json.tmp
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# pytest cache
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# ngrok
+.ngrok/

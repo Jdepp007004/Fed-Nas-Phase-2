@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  fl-server:
+    build:
+      context: ..           # repository root (so COPY shared/ works)
+      dockerfile: server/Dockerfile
+    container_name: fl_platform_server
+    ports:
+      - "8000:8000"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8000
+      # Set these in a .env file or via CI/CD secrets:
+      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN:-}
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - FL_ENCRYPTION_KEY=${FL_ENCRYPTION_KEY:-}
+      - VAL_CSV_PATH=${VAL_CSV_PATH:-}
+    volumes:
+      # Persist database and saved model files across container restarts
+      - fl_db:/app/server/database.json
+      - fl_models:/app/server/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  fl_db:
+  fl_models:

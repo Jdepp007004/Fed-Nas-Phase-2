@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FL Platform — Server Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Material Design Tokens ── */
+    :root {
+      --md-primary:        #1A73E8;
+      --md-primary-light:  #E8F0FE;
+      --md-on-primary:     #ffffff;
+      --md-surface:        #ffffff;
+      --md-surface-variant:#F8F9FA;
+      --md-outline:        #DADCE0;
+      --md-on-surface:     #202124;
+      --md-on-surface-var: #5F6368;
+      --md-error:          #D93025;
+      --md-warning:        #F29900;
+      --md-success:        #1E8E3E;
+      --md-elevation-1:    0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+      --md-elevation-2:    0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15);
+      --radius-s: 4px;
+      --radius-m: 8px;
+      --radius-l: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--md-surface-variant);
+      color: var(--md-on-surface);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Top App Bar ── */
+    .app-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--md-primary);
+      color: var(--md-on-primary);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      box-shadow: var(--md-elevation-2);
+    }
+    .app-bar-title { font-size: 20px; font-weight: 500; flex: 1; }
+    .app-bar-chip {
+      background: rgba(255,255,255,.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .url-chip {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 4px;
+      padding: 4px 12px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .url-chip:hover { background: rgba(255,255,255,.2); }
+
+    /* ── Layout ── */
+    .page { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .col-full { grid-column: 1 / -1; }
+
+    @media (max-width: 960px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--md-surface);
+      border-radius: var(--radius-l);
+      box-shadow: var(--md-elevation-1);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--md-on-surface-var);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+    .card-body { padding: 16px 24px 24px; }
+
+    /* ── Stat chips ── */
+    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .stat-chip {
+      display: flex; flex-direction: column;
+      background: var(--md-primary-light);
+      border-radius: var(--radius-m);
+      padding: 10px 16px;
+      min-width: 100px;
+    }
+    .stat-chip .val { font-size: 22px; font-weight: 700; color: var(--md-primary); }
+    .stat-chip .lbl { font-size: 11px; color: var(--md-on-surface-var); margin-top: 2px; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--md-on-surface-var);
+      padding: 12px 16px 8px;
+      border-bottom: 1px solid var(--md-outline);
+    }
+    tbody tr { border-bottom: 1px solid var(--md-outline); transition: background .15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--md-surface-variant); }
+    td { padding: 12px 16px; vertical-align: middle; }
+    td .primary { font-weight: 500; color: var(--md-on-surface); }
+    td .secondary { font-size: 11px; color: var(--md-on-surface-var); font-family: 'Roboto Mono', monospace; margin-top: 2px; }
+
+    /* ── Chips / Badges ── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+    }
+    .chip-blue    { background: var(--md-primary-light);      color: var(--md-primary);  }
+    .chip-green   { background: #E6F4EA;  color: var(--md-success); }
+    .chip-yellow  { background: #FEF7E0;  color: var(--md-warning); }
+    .chip-neutral { background: var(--md-surface-variant); color: var(--md-on-surface-var); }
+
+    /* ── Approve button ── */
+    .btn-approve {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: none; border: 1px solid var(--md-primary);
+      color: var(--md-primary); border-radius: 20px;
+      padding: 2px 10px; font-size: 11px; font-weight: 500;
+      cursor: pointer; text-decoration: none;
+      transition: background .15s;
+    }
+    .btn-approve:hover { background: var(--md-primary-light); }
+
+    /* ── Round progress bar ── */
+    .progress-track {
+      height: 4px; background: var(--md-outline); border-radius: 2px; overflow: hidden;
+    }
+    .progress-fill { height: 100%; background: var(--md-primary); border-radius: 2px; transition: width .5s; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--md-on-surface-var); margin-bottom: 12px;
+    }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--md-outline); margin: 0 24px; }
+
+    /* ── Status dot ── */
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-green  { background: var(--md-success); }
+    .dot-yellow { background: var(--md-warning); }
+    .dot-blue   { background: var(--md-primary); }
+
+    /* ── Auto-refresh notice ── */
+    .refresh-notice {
+      text-align: right; font-size: 11px; color: var(--md-on-surface-var); margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top App Bar -->
+<header class="app-bar">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="rgba(255,255,255,.8)" viewBox="0 0 24 24">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+  </svg>
+  <span class="app-bar-title">FL Platform — Server Dashboard</span>
+  <span class="app-bar-chip">v{{ server_version }}</span>
+  <span class="url-chip" onclick="navigator.clipboard.writeText('{{ ngrok_url }}')"
+        title="Click to copy">
+    {{ ngrok_url or 'localhost:8000' }}
+  </span>
+</header>
+
+<main class="page">
+
+  <!-- ── Summary stats ── -->
+  <div class="stat-row" style="margin-bottom:20px">
+    <div class="stat-chip">
+      <span class="val">{{ projects | length }}</span>
+      <span class="lbl">Active Projects</span>
+    </div>
+    <div class="stat-chip">
+      <span class="val">{{ users | length }}</span>
+      <span class="lbl">Registered Hospitals</span>
+    </div>
+    <div class="stat-chip">
+      <span class="val">{{ rounds_history | length }}</span>
+      <span class="lbl">Rounds Completed</span>
+    </div>
+    {% if rounds_history %}
+    {% set latest_auc = rounds_history[-1].global_auc if rounds_history[-1].global_auc is defined else 0 %}
+    <div class="stat-chip">
+      <span class="val">{{ "%.3f" | format(latest_auc) }}</span>
+      <span class="lbl">Latest Global AUC</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Projects + Hospitals ── -->
+  <div class="grid-2" style="margin-bottom:16px">
+
+    <!-- Projects card -->
+    <div class="card col-full">
+      <div class="card-header">
+        <span class="card-title">Projects</span>
+      </div>
+      <div class="card-body" style="padding:0 0 8px">
+        <table>
+          <thead>
+            <tr>
+              <th>Project</th>
+              <th>Progress</th>
+              <th>Depth</th>
+              <th>Connected</th>
+              <th>Pending Approval</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for proj in projects %}
+            <tr>
+              <td>
+                <div class="primary">{{ proj.name }}</div>
+                <div class="secondary">{{ proj.proj_id }}</div>
+              </td>
+              <td style="min-width:160px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="progress-track" style="flex:1">
+                    {% set pct = ((proj.current_round / proj.max_rounds * 100) | int) if proj.max_rounds > 0 else 0 %}
+                    {% set pct = pct if pct <= 100 else 100 %}
+                    <div class="progress-fill" style="width:{{ pct }}%"></div>
+                  </div>
+                  <span style="font-size:12px;color:var(--md-on-surface-var);white-space:nowrap">
+                    {{ proj.current_round }}/{{ proj.max_rounds }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="chip chip-blue">depth {{ proj.recommended_depth }}</span>
+              </td>
+              <td>
+                {% for uid in proj.connected_clients %}
+                  <span class="chip chip-green">
+                    <span class="dot dot-green"></span>{{ uid[:8] }}
+                  </span>
+                {% endfor %}
+                {% if not proj.connected_clients %}
+                  <span style="color:var(--md-on-surface-var);font-size:12px">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% for uid in proj.pending_clients %}
+                  <a href="/api/projects/{{ proj.proj_id }}/approve/{{ uid }}"
+                     class="btn-approve">✓ {{ uid[:8] }}</a>
+                {% endfor %}
+                {% if not proj.pending_clients %}
+                  <span style="color:var(--md-on-surface-var);font-size:12px">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if proj.accepting_clients %}
+                  <span class="chip chip-green">Open</span>
+                {% else %}
+                  <span class="chip chip-neutral">Closed</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="6" style="text-align:center;color:var(--md-on-surface-var);padding:32px">
+                No projects exist yet.
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Round History + Hospitals ── -->
+  <div class="grid-2">
+
+    <!-- Round history -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Round History</span></div>
+      <div class="card-body" style="padding:0 0 8px">
+        <table>
+          <thead>
+            <tr>
+              <th>Round</th>
+              <th>Val RMSE</th>
+              <th>Tox Acc</th>
+              <th>AUC-ROC</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for rec in rounds_history | reverse %}
+            {% set rmse   = rec.global_val_rmse      if rec.global_val_rmse      is defined else 0 %}
+            {% set toxacc = rec.global_tox_accuracy  if rec.global_tox_accuracy  is defined else 0 %}
+            {% set auc    = rec.global_auc            if rec.global_auc            is defined else 0 %}
+            {% set ts     = rec.timestamp[:19]        if rec.timestamp             is defined else '—' %}
+            <tr>
+              <td><span class="chip chip-blue">#{{ rec.round }}</span></td>
+              <td>{{ "%.4f" | format(rmse) }}</td>
+              <td>{{ "%.4f" | format(toxacc) }}</td>
+              <td>{{ "%.4f" | format(auc) }}</td>
+              <td style="font-family:'Roboto Mono',monospace;font-size:11px;color:var(--md-on-surface-var)">{{ ts }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5" style="text-align:center;color:var(--md-on-surface-var);padding:32px">
+                No rounds completed yet.
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Hospitals -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Registered Hospitals</span></div>
+      <div class="card-body" style="padding:0 0 8px">
+        <table>
+          <thead>
+            <tr>
+              <th>Hospital</th>
+              <th>Username</th>
+              <th>Last Active</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for user in users %}
+            <tr>
+              <td><div class="primary">{{ user.hospital_name }}</div></td>
+              <td style="font-family:'Roboto Mono',monospace;font-size:12px;color:var(--md-on-surface-var)">
+                {{ user.username }}
+              </td>
+              <td style="font-size:12px;color:var(--md-on-surface-var)">
+                {{ user.last_active[:10] if user.last_active else '—' }}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="3" style="text-align:center;color:var(--md-on-surface-var);padding:32px">
+                No hospitals registered.
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /grid-2 -->
+
+  <p class="refresh-notice">Auto-refreshes every 15 seconds</p>
+
+</main>
+
+<script>setTimeout(() => location.reload(), 15000);</script>
+</body>
+</html>

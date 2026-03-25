@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FL Platform — Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400@500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Material Design 3 Tokens ── */
+    :root {
+      --md-primary:         #1A73E8;
+      --md-primary-light:   #E8F0FE;
+      --md-on-primary:      #ffffff;
+      --md-surface:         #ffffff;
+      --md-surface-2:       #F8F9FA;
+      --md-outline:         #DADCE0;
+      --md-on-surface:      #202124;
+      --md-on-surface-var:  #5F6368;
+      --md-success:         #1E8E3E;
+      --md-success-light:   #E6F4EA;
+      --md-warning:         #F29900;
+      --md-error:           #D93025;
+      --md-error-light:     #FCE8E6;
+      --shadow-1:     0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+      --shadow-2:     0 1px 2px rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: var(--md-surface-2);
+      color: var(--md-on-surface);
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── App Bar ── */
+    .app-bar {
+      background: var(--md-primary);
+      color: #fff;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      box-shadow: var(--shadow-2);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .app-bar-logo { font-size: 20px; }
+    .app-bar-title { font-size: 20px; font-weight: 500; flex: 1; }
+    #conn-indicator {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; opacity: .85;
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.4); }
+    .status-dot.ok     { background: #81C995; }
+    .status-dot.err    { background: #FF6D60; }
+    .status-dot.wait   { background: var(--md-warning); animation: blink 1s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 64px);
+    }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+    /* ── Sidebar (stepper) ── */
+    .sidebar {
+      background: var(--md-surface);
+      border-right: 1px solid var(--md-outline);
+      padding: 24px 0;
+      overflow-y: auto;
+    }
+
+    /* Material vertical stepper */
+    .stepper { padding: 0 16px; }
+    .step { display: flex; gap: 16px; padding: 4px 8px 4px; }
+    .step-left { display: flex; flex-direction: column; align-items: center; }
+    .step-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--md-outline); color: var(--md-on-surface-var);
+      flex-shrink: 0; transition: background .3s, color .3s;
+    }
+    .step-circle.active { background: var(--md-primary); color: #fff; }
+    .step-circle.done   { background: var(--md-success); color: #fff; }
+    .step-line {
+      width: 2px; flex: 1; min-height: 8px;
+      background: var(--md-outline); margin: 4px 0;
+    }
+    .step-line.done { background: var(--md-success); }
+    .step-right { flex: 1; padding-bottom: 20px; }
+    .step-title {
+      font-size: 13px; font-weight: 500; padding-top: 6px;
+      color: var(--md-on-surface-var);
+    }
+    .step-title.active { color: var(--md-on-surface); }
+    .step-content { padding-top: 12px; }
+
+    /* ── Form elements ── */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 12px; font-weight: 500;
+      color: var(--md-on-surface-var); margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--md-outline);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--md-on-surface);
+      background: var(--md-surface);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: var(--md-primary);
+      box-shadow: 0 0 0 2px var(--md-primary-light);
+    }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 36px; padding: 0 24px; border-radius: 4px;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      cursor: pointer; border: none; transition: box-shadow .2s, opacity .15s;
+    }
+    .btn-filled {
+      background: var(--md-primary); color: #fff;
+    }
+    .btn-filled:hover { box-shadow: var(--shadow-1); }
+    .btn-filled:disabled { opacity: .38; cursor: not-allowed; }
+    .btn-outlined {
+      background: none; color: var(--md-primary);
+      border: 1px solid var(--md-primary);
+    }
+    .btn-outlined:hover { background: var(--md-primary-light); }
+    .btn-tonal {
+      background: var(--md-primary-light); color: var(--md-primary);
+    }
+    .btn-danger { background: var(--md-error); color: #fff; }
+    .btn-w100 { width: 100%; }
+
+    /* ── File drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--md-outline);
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--md-on-surface-var);
+      font-size: 13px;
+      transition: border-color .2s, background .2s;
+      margin-bottom: 12px;
+    }
+    .drop-zone:hover, .drop-zone.drag { border-color: var(--md-primary); background: var(--md-primary-light); }
+    .drop-zone.ok { border-color: var(--md-success); color: var(--md-success); }
+    .drop-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+
+    /* ── Project list ── */
+    .proj-card {
+      border: 1px solid var(--md-outline);
+      border-radius: 8px; padding: 12px 14px;
+      cursor: pointer; transition: border-color .15s, background .15s;
+      margin-bottom: 8px;
+    }
+    .proj-card:hover { border-color: var(--md-primary); background: var(--md-primary-light); }
+    .proj-card.selected { border-color: var(--md-primary); background: var(--md-primary-light); }
+    .proj-name { font-weight: 500; font-size: 14px; }
+    .proj-meta { font-size: 11px; color: var(--md-on-surface-var); margin-top: 3px; }
+
+    /* ── Chip ── */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .chip-ok      { background: var(--md-success-light); color: var(--md-success); }
+    .chip-pending { background: #FEF7E0; color: var(--md-warning); }
+    .chip-blue    { background: var(--md-primary-light); color: var(--md-primary); }
+
+    /* ── Main panel ── */
+    .main-panel { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--md-surface);
+      border-radius: 12px;
+      box-shadow: var(--shadow-1);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--md-outline);
+      font-size: 13px; font-weight: 500;
+      color: var(--md-on-surface-var);
+      text-transform: uppercase; letter-spacing: .6px;
+    }
+    .card-body { padding: 20px; }
+
+    /* ── Metric grid ── */
+    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 1100px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+    .metric-box {
+      background: var(--md-surface-2);
+      border-radius: 8px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .metric-val { font-size: 24px; font-weight: 700; color: var(--md-primary); }
+    .metric-lbl { font-size: 11px; color: var(--md-on-surface-var); margin-top: 2px;
+                  text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Progress bar ── */
+    .progress-wrap { margin: 8px 0; }
+    .progress-track { height: 4px; background: var(--md-outline); border-radius: 2px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--md-primary); border-radius: 2px; transition: width .6s ease; }
+    .progress-label { display: flex; justify-content: space-between;
+                      font-size: 11px; color: var(--md-on-surface-var); margin-top: 4px; }
+
+    /* ── Bar chart ── */
+    .bar-chart { display: flex; align-items: flex-end; gap: 5px; height: 80px; padding-bottom: 2px; }
+    .bar       { flex: 1; border-radius: 3px 3px 0 0; background: var(--md-primary);
+                 opacity: .75; transition: opacity .2s; min-width: 10px; }
+    .bar:hover { opacity: 1; }
+    .chart-label { font-size: 10px; color: var(--md-on-surface-var); margin-top: 4px; }
+
+    /* ── Log ── */
+    #log-box {
+      height: 200px; overflow-y: auto;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 12px;
+      background: #F8F9FA;
+      border: 1px solid var(--md-outline);
+      border-radius: 4px;
+      padding: 10px 12px;
+      color: var(--md-on-surface);
+    }
+    .log-info { color: var(--md-primary); }
+    .log-ok   { color: var(--md-success); }
+    .log-warn { color: var(--md-warning); }
+    .log-err  { color: var(--md-error); }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--md-outline); margin: 12px 0; }
+
+    /* ── Helper ── */
+    .text-secondary { font-size: 12px; color: var(--md-on-surface-var); }
+    .row-between { display: flex; justify-content: space-between; align-items: center; }
+    .gap-8  { gap: 8px; }
+    .flex   { display: flex; }
+    .mt-12  { margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- App Bar -->
+<header class="app-bar">
+  <span class="app-bar-logo">⬡</span>
+  <span class="app-bar-title">Federated Learning Client</span>
+  <div id="conn-indicator">
+    <span class="status-dot" id="status-dot"></span>
+    <span id="status-text">Disconnected</span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ══ SIDEBAR / STEPPER ══════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="stepper">
+
+      <!-- Step 1: Connect -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-circle active" id="s1">1</div>
+          <div class="step-line" id="l1"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title active">Server Connection</div>
+          <div class="step-content">
+            <div class="field">
+              <label>ngrok Server URL</label>
+              <input id="server-url" type="url" placeholder="https://xxxx.ngrok.io" />
+            </div>
+            <button class="btn btn-filled btn-w100" id="btn-connect" onclick="connect()">
+              Connect
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Auth -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-circle" id="s2">2</div>
+          <div class="step-line" id="l2"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">Authentication</div>
+          <div class="step-content" id="step2-content" style="display:none">
+            <div class="field">
+              <label>Username</label>
+              <input id="auth-user" type="text" placeholder="hospital_id" />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input id="auth-pass" type="password" placeholder="••••••••" />
+            </div>
+            <div id="reg-fields" style="display:none">
+              <div class="field">
+                <label>Hospital Name</label>
+                <input id="auth-hosp" type="text" placeholder="City General Hospital" />
+              </div>
+              <div class="field">
+                <label>Contact Email</label>
+                <input id="auth-email" type="email" placeholder="admin@hospital.org" />
+              </div>
+            </div>
+            <div class="flex gap-8 mt-12">
+              <button class="btn btn-filled" style="flex:1" onclick="doLogin()">Login</button>
+              <button class="btn btn-outlined" style="flex:1" onclick="toggleReg()" id="btn-reg">Register</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Data -->
+      <div class="step">
+        <div class="step-left">
+          <div class="step-circle" id="s3">3</div>
+          <div class="step-line" id="l3"></div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">Local Data</div>
+          <div class="step-content" id="step3-content" style="display:none">
+            <div class="drop-zone" id="drop-zone"
+                 onclick="document.getElementById('csv-input').click()">
+              <span class="drop-icon">📂</span>
+              <span id="drop-label">Click or drag TCGA CSV here</span>
+              <input id="csv-input" type="file" accept=".csv" style="display:none" onchange="onFile(event)" />
+            </div>
+            <div class="divider"></div>
+            <p style="font-size:12px;font-weight:500;color:var(--md-on-surface-var);margin-bottom:8px">Hardware Profile</p>
+            <div class="field-row">
+              <div class="field">
+                <label>RAM (GB)</label>
+                <input id="hw-ram" type="number" value="8" min="1" />
+              </div>
+              <div class="field">
+                <label>CPU Cores</label>
+                <input id="hw-cores" type="number" value="4" min="1" />
+              </div>
+            </div>
+            <div class="flex" style="align-items:center;gap:8px;margin-top:4px">
+              <input type="checkbox" id="hw-gpu" style="width:16px;height:16px;accent-color:var(--md-primary)" />
+              <label for="hw-gpu" style="font-size:13px;color:var(--md-on-surface-var)">GPU available</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Join -->
+      <div class="step" style="padding-bottom:0">
+        <div class="step-left">
+          <div class="step-circle" id="s4">4</div>
+        </div>
+        <div class="step-right">
+          <div class="step-title">Join Project</div>
+          <div class="step-content" id="step4-content" style="display:none">
+            <div id="proj-list" style="max-height:220px;overflow-y:auto">
+              <p class="text-secondary">Load projects after login.</p>
+            </div>
+            <button class="btn btn-tonal btn-w100 mt-12" onclick="joinProject()">
+              Request to Join
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /stepper -->
+  </aside>
+
+  <!-- ══ MAIN PANEL ═════════════════════════════════════════════════════════ -->
+  <main class="main-panel">
+
+    <!-- Metrics -->
+    <div class="card">
+      <div class="card-header">Training Metrics</div>
+      <div class="card-body">
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-val" id="m-round">—</div>
+            <div class="metric-lbl">Current Round</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="m-depth">—</div>
+            <div class="metric-lbl">Active Depth</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="m-auc">—</div>
+            <div class="metric-lbl">AUC-ROC</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="m-rmse">—</div>
+            <div class="metric-lbl">Val RMSE</div>
+          </div>
+        </div>
+
+        <div class="progress-wrap" style="margin-top:20px">
+          <div class="progress-track">
+            <div class="progress-fill" id="prog-bar" style="width:0%"></div>
+          </div>
+          <div class="progress-label">
+            <span>Round <span id="prog-cur">0</span> of <span id="prog-max">—</span></span>
+            <span id="prog-pct">0%</span>
+          </div>
+        </div>
+
+        <div class="flex gap-8 mt-12">
+          <button id="btn-start" class="btn btn-filled" onclick="startTraining()" disabled>
+            ▶ Start Training
+          </button>
+          <button id="btn-stop" class="btn btn-danger" onclick="stopTraining()" style="display:none">
+            ■ Stop
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AUC Chart -->
+    <div class="card">
+      <div class="card-header row-between">
+        <span>Global AUC-ROC History</span>
+        <span class="text-secondary" id="chart-info">No data yet</span>
+      </div>
+      <div class="card-body">
+        <div class="bar-chart" id="bar-chart">
+          <span class="text-secondary" style="align-self:center">
+            Waiting for first round to complete…
+          </span>
+        </div>
+        <div class="chart-label" id="chart-label"></div>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card">
+      <div class="card-header row-between">
+        <span>Activity Log</span>
+        <button class="btn btn-outlined" style="height:28px;padding:0 12px;font-size:12px"
+                onclick="document.getElementById('log-box').innerHTML=''">Clear</button>
+      </div>
+      <div class="card-body" style="padding:12px">
+        <div id="log-box"></div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /layout -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   State
+═══════════════════════════════════════════════════════════════════════════ */
+let serverUrl = '', jwt = '', selectedProj = null, csvFile = null, stopFlag = false;
+let isRegMode = false;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Logging
+═══════════════════════════════════════════════════════════════════════════ */
+function log(msg, cls='') {
+  const box = document.getElementById('log-box');
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}]  ${msg}`;
+  box.append(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HTTP
+═══════════════════════════════════════════════════════════════════════════ */
+async function api(method, path, body) {
+  const h = { 'Content-Type': 'application/json' };
+  if (jwt) h['Authorization'] = `Bearer ${jwt}`;
+  const r = await fetch(serverUrl + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined });
+  if (!r.ok) { const t = await r.text(); throw new Error(`HTTP ${r.status}: ${t}`); }
+  return r.json();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Stepper helpers
+═══════════════════════════════════════════════════════════════════════════ */
+function activateStep(n) {
+  document.getElementById(`s${n}`).classList.add('active');
+  document.getElementById(`step${n}-content`).style.display = 'block';
+  document.querySelector(`#s${n}`).closest('.step').querySelector('.step-title').classList.add('active');
+  if (n > 1) {
+    const prev = document.getElementById(`l${n-1}`);
+    if (prev) prev.classList.add('done');
+  }
+}
+function markDone(n) {
+  const c = document.getElementById(`s${n}`);
+  c.classList.remove('active');
+  c.classList.add('done');
+  c.textContent = '✓';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Step 1 — Connect
+═══════════════════════════════════════════════════════════════════════════ */
+async function connect() {
+  serverUrl = document.getElementById('server-url').value.trim().replace(/\/$/, '');
+  if (!serverUrl) return;
+  setStatus('wait', 'Connecting…');
+  try {
+    const s = await api('GET', '/api/status');
+    setStatus('ok', `Connected · v${s.server_version || '?'}`);
+    log(`Server OK — ${s.ngrok_url || serverUrl}`, 'log-ok');
+    markDone(1);
+    activateStep(2);
+  } catch(e) {
+    setStatus('err', 'Unreachable');
+    log('Connection failed: ' + e.message, 'log-err');
+  }
+}
+
+function setStatus(cls, text) {
+  document.getElementById('status-dot').className = 'status-dot ' + cls;
+  document.getElementById('status-text').textContent = text;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Step 2 — Auth
+═══════════════════════════════════════════════════════════════════════════ */
+function toggleReg() {
+  isRegMode = !isRegMode;
+  document.getElementById('reg-fields').style.display = isRegMode ? 'block' : 'none';
+  document.getElementById('btn-reg').textContent = isRegMode ? 'Cancel' : 'Register';
+}
+
+async function doLogin() {
+  const u = document.getElementById('auth-user').value.trim();
+  const p = document.getElementById('auth-pass').value;
+  if (!u || !p) { log('Enter credentials.', 'log-warn'); return; }
+  try {
+    if (isRegMode) {
+      const h = document.getElementById('auth-hosp').value.trim();
+      const e = document.getElementById('auth-email').value.trim();
+      await api('POST', '/api/auth/register', { username: u, password: p, hospital_name: h, contact_email: e });
+      log(`Registered as ${u}`, 'log-ok');
+    }
+    const r = await api('POST', '/api/auth/login', { username: u, password: p });
+    jwt = r.access_token;
+    log(`Logged in as ${u}`, 'log-ok');
+    markDone(2);
+    activateStep(3);
+    loadProjects();
+  } catch(e) {
+    log('Auth: ' + e.message, 'log-err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Step 3 — File
+═══════════════════════════════════════════════════════════════════════════ */
+function onFile(evt) {
+  csvFile = evt.target.files[0];
+  if (!csvFile) return;
+  const zone = document.getElementById('drop-zone');
+  zone.classList.add('ok');
+  document.getElementById('drop-label').textContent = '✓  ' + csvFile.name;
+  log(`File: ${csvFile.name}`, 'log-ok');
+  markDone(3);
+  activateStep(4);
+}
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f?.name.endsWith('.csv')) {
+    csvFile = f; dz.classList.add('ok');
+    document.getElementById('drop-label').textContent = '✓  ' + f.name;
+    log(`File: ${f.name}`, 'log-ok');
+    markDone(3); activateStep(4);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Step 4 — Projects
+═══════════════════════════════════════════════════════════════════════════ */
+async function loadProjects() {
+  try {
+    const projs = await api('GET', '/api/projects');
+    const list = document.getElementById('proj-list');
+    list.innerHTML = '';
+    if (!projs.length) { list.innerHTML = '<p class="text-secondary">No projects available.</p>'; return; }
+    projs.forEach(p => {
+      const el = document.createElement('div');
+      el.className = 'proj-card' + (p.i_am_connected ? ' selected' : '');
+      el.id = 'p-' + p.proj_id;
+      el.onclick = () => selectProj(p, el);
+      el.innerHTML = `
+        <div class="proj-name">${p.name}
+          ${p.i_am_connected ? '<span class="chip chip-ok" style="margin-left:6px">Approved</span>' : ''}
+          ${p.i_am_pending   ? '<span class="chip chip-pending" style="margin-left:6px">Pending</span>' : ''}
+        </div>
+        <div class="proj-meta">Round ${p.current_round}/${p.max_rounds} · Schema ${p.schema_version||'1.0.0'}</div>`;
+      list.append(el);
+    });
+  } catch(e) { log('Projects: ' + e.message, 'log-err'); }
+}
+
+function selectProj(proj, el) {
+  selectedProj = proj;
+  document.querySelectorAll('.proj-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (proj.i_am_connected) {
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('prog-max').textContent = proj.max_rounds;
+  }
+  log(`Selected: ${proj.name}`, 'log-info');
+}
+
+async function joinProject() {
+  if (!selectedProj) { log('Select a project.', 'log-warn'); return; }
+  const hw = {
+    ram_gb:         parseFloat(document.getElementById('hw-ram').value)   || 8,
+    cpu_cores:      parseInt  (document.getElementById('hw-cores').value)  || 4,
+    gpu_available:  document.getElementById('hw-gpu').checked,
+    local_data_size: 1000,
+  };
+  try {
+    const r = await api('POST', `/api/projects/${selectedProj.proj_id}/join`, { hardware_profile: hw });
+    log(`Join sent — depth ${r.recommended_depth} — ${r.status}`, 'log-ok');
+    log('Waiting for admin approval on the server dashboard…', 'log-warn');
+    loadProjects();
+  } catch(e) { log('Join: ' + e.message, 'log-err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Training Loop
+═══════════════════════════════════════════════════════════════════════════ */
+async function startTraining() {
+  if (!selectedProj) return;
+  stopFlag = false;
+  document.getElementById('btn-start').style.display = 'none';
+  document.getElementById('btn-stop').style.display  = 'inline-flex';
+  log('Starting federated training loop…', 'log-info');
+
+  while (!stopFlag) {
+    try {
+      const model = await api('GET', `/api/projects/${selectedProj.proj_id}/model`);
+      const rnd = model.round, depth = model.active_depth;
+      document.getElementById('m-round').textContent = rnd;
+      document.getElementById('m-depth').textContent = depth;
+      document.getElementById('prog-cur').textContent = rnd;
+      const maxR = parseInt(document.getElementById('prog-max').textContent) || selectedProj.max_rounds;
+      const pct = maxR ? Math.round((rnd / maxR) * 100) : 0;
+      document.getElementById('prog-bar').style.width = pct + '%';
+      document.getElementById('prog-pct').textContent = pct + '%';
+      log(`Round ${rnd} | depth ${depth}`, 'log-info');
+
+      await api('POST', `/api/projects/${selectedProj.proj_id}/update`, {
+        round_id: rnd, active_depth: depth,
+        weights: { ciphertext: btoa('{}'), nonce: btoa('000000000000') },
+        num_samples: 500, metrics: { loss: Math.random() * 0.4 + 0.1 },
+      });
+
+      const hist = await api('GET', `/api/projects/${selectedProj.proj_id}/history`);
+      if (hist.length) {
+        const last = hist[hist.length - 1];
+        document.getElementById('m-auc').textContent  = (last.global_auc         || 0).toFixed(4);
+        document.getElementById('m-rmse').textContent = (last.global_val_rmse    || 0).toFixed(4);
+        drawChart(hist);
+      }
+      if (rnd >= maxR) { log('Max rounds reached.', 'log-ok'); break; }
+    } catch(e) { log('Error: ' + e.message, 'log-err'); }
+    await sleep(8000);
+  }
+  document.getElementById('btn-start').style.display = 'inline-flex';
+  document.getElementById('btn-stop').style.display  = 'none';
+  log('Training stopped.', 'log-warn');
+}
+
+function stopTraining() { stopFlag = true; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Chart
+═══════════════════════════════════════════════════════════════════════════ */
+function drawChart(history) {
+  const chart = document.getElementById('bar-chart');
+  chart.innerHTML = '';
+  const maxAuc = Math.max(...history.map(r => r.global_auc || 0), 0.01);
+  history.forEach(r => {
+    const b = document.createElement('div');
+    b.className = 'bar';
+    b.style.height = Math.round(((r.global_auc || 0) / maxAuc) * 74) + 'px';
+    b.title = `Round ${r.round}  AUC: ${(r.global_auc || 0).toFixed(4)}`;
+    chart.append(b);
+  });
+  document.getElementById('chart-info').textContent = `${history.length} rounds`;
+  document.getElementById('chart-label').textContent = `AUC-ROC by round (max ${maxAuc.toFixed(4)})`;
+}
+</script>
+</body>
+</html>
