@@ -46,7 +46,7 @@ def set_val_dataloader(dl):
 
 # ─── JWT Dependency ───────────────────────────────────────────────────────────
 
-def _get_current_user(authorization: str = Header(None)) -> dict:
+def _get_current_user(authorization: str = Header(None)) -> dict:  # noqa: B008
     if not authorization or not authorization.startswith("Bearer "):
         raise _http_error(401, "Missing or invalid Authorization header.")
     token = authorization.split(" ", 1)[1]
@@ -78,7 +78,7 @@ class UpdateRequest(BaseModel):
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @router.get("")
-async def list_projects(current_user: dict = Depends(_get_current_user)):
+async def list_projects(current_user: dict = Depends(_get_current_user)):  # noqa: B008
     """GET /api/projects"""
     db = read_db()
     user_id = current_user["sub"]
@@ -90,7 +90,7 @@ async def list_projects(current_user: dict = Depends(_get_current_user)):
         if proj.get("accepting_clients") or proj["proj_id"] in approved:
             entry = {k: proj[k] for k in proj if k != "global_model_path"}
             entry["i_am_connected"] = user_id in proj.get("connected_clients", [])
-            entry["i_am_pending"]   = user_id in proj.get("pending_clients", [])
+            entry["i_am_pending"] = user_id in proj.get("pending_clients", [])
             visible.append(entry)
     return JSONResponse(status_code=200, content=visible)
 
@@ -99,7 +99,7 @@ async def list_projects(current_user: dict = Depends(_get_current_user)):
 async def join_project(
     proj_id: str,
     payload: JoinRequest,
-    current_user: dict = Depends(_get_current_user),
+    current_user: dict = Depends(_get_current_user),  # noqa: B008
 ):
     """POST /api/projects/{proj_id}/join"""
     proj = get_project(proj_id)
@@ -112,7 +112,7 @@ async def join_project(
     recommended_depth = recommend_subnet_depth(user_id, payload.hardware_profile)
 
     # Add to pending_clients if not already there or in connected
-    pending  = proj.get("pending_clients", [])
+    pending = proj.get("pending_clients", [])
     connected = proj.get("connected_clients", [])
     if user_id not in pending and user_id not in connected:
         pending.append(user_id)
@@ -129,7 +129,7 @@ async def join_project(
 @router.get("/{proj_id}/model")
 async def get_global_model(
     proj_id: str,
-    current_user: dict = Depends(_get_current_user),
+    current_user: dict = Depends(_get_current_user),  # noqa: B008
 ):
     """GET /api/projects/{proj_id}/model"""
     proj = get_project(proj_id)
@@ -153,7 +153,7 @@ async def get_global_model(
     db = read_db()
     db = read_db()
     # Find user profile to check if they have specific settings or hardware info
-    _user = next((u for u in db["users"] if u["user_id"] == user_id), {})
+    # _user = next((u for u in db["users"] if u["user_id"] == user_id), {})
     active_depth = proj.get("recommended_depth", MODEL_CONFIG["max_depth"])
 
     return JSONResponse(status_code=200, content={
