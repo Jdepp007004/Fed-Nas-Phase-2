@@ -399,7 +399,12 @@ class TestSchemaValidator:
         rng = np.random.default_rng(0)
         data = {}
         for col in REQUIRED_COLUMNS:
-            data[col] = ["a"] * 150
+            ctype = schema.get("column_types", {}).get(col, "string")
+            if ctype in ("int", "float"):
+                data[col] = rng.uniform(0, 100, 150)
+            else:
+                cats = schema.get("categorical_values", {}).get(col)
+                data[col] = rng.choice(cats, 150) if cats else ["a"] * 150
         data["overall_survival"] = rng.uniform(0, 5000, 150)
         df = pd.DataFrame(data)
         result = validate_schema(df, schema)
