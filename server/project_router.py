@@ -151,7 +151,9 @@ async def get_global_model(
 
     # Per-client depth assignment
     db = read_db()
-    user = next((u for u in db["users"] if u["user_id"] == user_id), {})
+    db = read_db()
+    # Find user profile to check if they have specific settings or hardware info
+    _user = next((u for u in db["users"] if u["user_id"] == user_id), {})
     active_depth = proj.get("recommended_depth", MODEL_CONFIG["max_depth"])
 
     return JSONResponse(status_code=200, content={
@@ -166,7 +168,7 @@ async def post_model_update(
     proj_id: str,
     payload: UpdateRequest,
     background_tasks: BackgroundTasks,
-    current_user: dict = Depends(_get_current_user),
+    current_user: dict = Depends(_get_current_user),  # noqa: B008
 ):
     """POST /api/projects/{proj_id}/update"""
     proj = get_project(proj_id)
@@ -229,7 +231,7 @@ async def post_model_update(
 @router.get("/{proj_id}/history")
 async def get_round_history(
     proj_id: str,
-    current_user: dict = Depends(_get_current_user),
+    current_user: dict = Depends(_get_current_user),  # noqa: B008
 ):
     """GET /api/projects/{proj_id}/history"""
     db = read_db()
@@ -241,7 +243,7 @@ async def get_round_history(
 async def approve_client(
     proj_id: str,
     user_id_to_approve: str,
-    current_user: dict = Depends(_get_current_user),
+    current_user: dict = Depends(_get_current_user),  # noqa: B008
 ):
     """GET /api/projects/{proj_id}/approve/{user_id} — admin action."""
     proj = get_project(proj_id)
