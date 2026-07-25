@@ -7,6 +7,7 @@ Owner: Sunishka Sarkar
 
 import uuid
 import datetime
+from datetime import timezone as _tz
 
 import bcrypt
 import jwt as pyjwt
@@ -42,7 +43,7 @@ class LoginRequest(BaseModel):
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def create_jwt(user_id: str) -> str:
-    exp = datetime.datetime.utcnow() + datetime.timedelta(hours=JWT_EXP_HOURS)
+    exp = datetime.datetime.now(_tz.utc) + datetime.timedelta(hours=JWT_EXP_HOURS)
     payload = {"sub": user_id, "exp": exp}
     return pyjwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -77,7 +78,7 @@ async def register_user(payload: RegisterRequest):
     pw_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
 
     user_id = str(uuid.uuid4())
-    now = datetime.datetime.utcnow().isoformat() + "Z"
+    now = datetime.datetime.now(_tz.utc).isoformat() + "Z"
     new_user = {
         "user_id":          user_id,
         "username":         payload.username,
@@ -113,7 +114,7 @@ async def login_user(payload: LoginRequest):
         )
 
     # Update last_active
-    user["last_active"] = datetime.datetime.utcnow().isoformat() + "Z"
+    user["last_active"] = datetime.datetime.now(_tz.utc).isoformat() + "Z"
     write_db(db)
 
     token = create_jwt(user["user_id"])

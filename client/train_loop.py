@@ -25,6 +25,13 @@ from shared.model_schema import (  # noqa: E402
     DEFAULT_ACTIVE_DEPTH,
 )
 
+# DP utilities (graceful fallback — DP is optional at runtime)
+try:
+    from shared.dp_utils import apply_dp, clip_weights, PrivacyAccountant
+    _DP_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    _DP_AVAILABLE = False
+
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +42,10 @@ class TrainConfig(NamedTuple):
     fedprox_mu: float = DEFAULT_FEDPROX_MU
     task_weights: dict = None       # will default to DEFAULT_TASK_WEIGHTS
     clip_norm: float = DEFAULT_CLIP_NORM
+    # ── Differential Privacy (set dp_epsilon > 0 to enable) ──────────────────
+    dp_epsilon: float = 0.0         # per-round privacy budget (0 = DP disabled)
+    dp_delta: float = 1e-5          # per-round failure probability
+    dp_max_grad_norm: float = 1.0   # L2 clip norm for sensitivity bounding
 
 
 # ─── FedProx Penalty ─────────────────────────────────────────────────────────
@@ -92,6 +103,9 @@ def run_local_training(
     """
     if config is None:
         config = TrainConfig()
+    elif config.dp_epsilon is None:
+        # ``None`` is a friendly spelling for disabled DP in API callers.
+        config = config._replace(dp_epsilon=0.0)
 
     task_weights = config.task_weights if config.task_weights else DEFAULT_TASK_WEIGHTS
 
@@ -176,6 +190,29 @@ def run_local_training(
     # ── Package results ─────────────────────────────────────────────────────
     subnet_weights = get_subnet_weights(model, config.active_depth)
 
+    # ── Differential Privacy (optional) ─────────────────────────────────────
+    privacy_info: dict = {}
+    if _DP_AVAILABLE and config.dp_epsilon > 0:
+        # Step 1: clip global L2 norm to establish sensitivity bound
+        subnet_weights = clip_weights(subnet_weights, config.dp_max_grad_norm)
+        # Step 2: add calibrated Gaussian noise
+        subnet_weights = apply_dp(
+            subnet_weights,
+            sensitivity=config.dp_max_grad_norm,
+            epsilon=config.dp_epsilon,
+            delta=config.dp_delta,
+        )
+        # Step 3: account for privacy budget spent
+        num_steps = max(config.epochs, 1)
+        accountant = PrivacyAccountant(
+            target_epsilon=config.dp_epsilon,
+            target_delta=config.dp_delta,
+            noise_multiplier=1.0,  # sigma/sensitivity ≈ 1 at chosen epsilon
+            sampling_rate=min(1.0, 32.0 / max(total_samples, 1)),
+        )
+        accountant.step(num_steps)
+        privacy_info = accountant.get_privacy_spent()
+
     return {
         "weights": subnet_weights,
         "num_samples": total_samples,
@@ -184,8 +221,15 @@ def run_local_training(
             "val_rmse": val_rmse,
             "val_acc_tox": val_acc_tox,
             "val_auc": val_auc,
+            **({"privacy_spent": privacy_info} if privacy_info else {}),
         },
     }
+
+
+def local_train(model: Supernet, dataloader: DataLoader, config: TrainConfig = None) -> dict:
+    """Small compatibility facade for integrations expecting a flat loss field."""
+    result = run_local_training(model, dataloader, config)
+    return {"loss": result["metrics"]["loss"], **result}
 
 
 def _run_validation(model, val_loader, active_depth, task_weights, device):

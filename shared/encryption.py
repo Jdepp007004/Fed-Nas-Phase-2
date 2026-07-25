@@ -56,7 +56,7 @@ def _bytes_to_weights(data: bytes) -> dict:
 
 # ─── Public API ──────────────────────────────────────────────────────────────
 
-def encrypt_weights(weights: dict) -> dict:
+def encrypt_weights(weights: dict, key_b64: str = None) -> dict:
     """
     Encrypt a weight dict using AES-256-GCM.
 
@@ -64,6 +64,8 @@ def encrypt_weights(weights: dict) -> dict:
     ----------
     weights : dict
         {param_name: np.ndarray} as produced by get_subnet_weights().
+    key_b64 : str, optional
+        Base64-encoded 32-byte AES key. If None, reads FL_ENCRYPTION_KEY env var.
 
     Returns
     -------
@@ -74,7 +76,12 @@ def encrypt_weights(weights: dict) -> dict:
           'tag':        str  (included in GCM ciphertext automatically),
         }
     """
-    key = _get_key()
+    if key_b64 is not None:
+        key = base64.b64decode(key_b64)
+        if len(key) != 32:
+            raise ValueError("Provided key_b64 must decode to exactly 32 bytes (AES-256).")
+    else:
+        key = _get_key()
     aesgcm = AESGCM(key)
     nonce = os.urandom(12)           # 96-bit nonce recommended for GCM
     plaintext = _weights_to_bytes(weights)
@@ -85,7 +92,7 @@ def encrypt_weights(weights: dict) -> dict:
     }
 
 
-def decrypt_weights(encrypted: dict) -> dict:
+def decrypt_weights(encrypted: dict, key_b64: str = None) -> dict:
     """
     Decrypt a weight payload produced by encrypt_weights().
 
@@ -93,6 +100,8 @@ def decrypt_weights(encrypted: dict) -> dict:
     ----------
     encrypted : dict
         Must have 'ciphertext' and 'nonce' keys (base64 strings).
+    key_b64 : str, optional
+        Base64-encoded 32-byte AES key. If None, reads FL_ENCRYPTION_KEY env var.
 
     Returns
     -------
@@ -104,7 +113,12 @@ def decrypt_weights(encrypted: dict) -> dict:
     ValueError
         If decryption fails (wrong key, tampered ciphertext).
     """
-    key = _get_key()
+    if key_b64 is not None:
+        key = base64.b64decode(key_b64)
+        if len(key) != 32:
+            raise ValueError("Provided key_b64 must decode to exactly 32 bytes (AES-256).")
+    else:
+        key = _get_key()
     aesgcm = AESGCM(key)
     try:
         nonce = base64.b64decode(encrypted["nonce"])

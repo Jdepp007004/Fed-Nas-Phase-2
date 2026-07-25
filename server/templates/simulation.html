@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FL Platform — Operator Session</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:        #1A73E8;
+      --primary-light:  #E8F0FE;
+      --surface:        #ffffff;
+      --surface-2:      #F8F9FA;
+      --outline:        #DADCE0;
+      --on-surface:     #202124;
+      --on-surface-var: #5F6368;
+      --success:        #1E8E3E;
+      --success-light:  #E6F4EA;
+      --warning:        #F29900;
+      --warning-light:  #FEF7E0;
+      --error:          #D93025;
+      --shadow-1: 0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+      --shadow-2: 0 1px 2px rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Roboto',sans-serif;background:var(--surface-2);color:var(--on-surface);font-size:14px;min-height:100vh}
+
+    /* ── Scenes ── */
+    .scene{display:none;min-height:100vh;flex-direction:column;opacity:0;transition:opacity .5s ease}
+    .scene.visible{display:flex;opacity:1}
+
+    /* ══════════════════════════════════════════
+       SCENE 1 — LOGIN
+    ══════════════════════════════════════════ */
+    #scene-login{
+      align-items:center;justify-content:center;
+      background: linear-gradient(135deg,#1A73E8 0%,#0D47A1 100%);
+    }
+    .login-card{
+      background:#fff;border-radius:16px;
+      box-shadow:0 8px 40px rgba(0,0,0,.25);
+      padding:40px 44px;width:100%;max-width:420px;
+    }
+    .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+    .login-logo-icon{font-size:32px}
+    .login-logo-text{font-size:20px;font-weight:700;color:var(--primary)}
+    .login-logo-sub{font-size:12px;color:var(--on-surface-var);margin-top:1px}
+    .login-title{font-size:16px;font-weight:500;color:var(--on-surface);margin-bottom:22px}
+    .field{margin-bottom:16px}
+    .field label{display:block;font-size:12px;font-weight:500;color:var(--on-surface-var);margin-bottom:5px}
+    .field input{
+      width:100%;height:44px;padding:0 14px;
+      border:1px solid var(--outline);border-radius:6px;
+      font-family:inherit;font-size:14px;color:var(--on-surface);
+      background:var(--surface);outline:none;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+    .btn-login{
+      width:100%;height:44px;background:var(--primary);color:#fff;
+      border:none;border-radius:6px;font-family:inherit;font-size:15px;font-weight:500;
+      cursor:pointer;transition:box-shadow .2s,opacity .15s;margin-top:8px;
+    }
+    .btn-login:hover{box-shadow:var(--shadow-2)}
+    .btn-login:disabled{opacity:.5;cursor:not-allowed}
+    .login-hint{font-size:11px;color:var(--on-surface-var);text-align:center;margin-top:14px}
+
+    /* ══════════════════════════════════════════
+       SHARED APP BAR
+    ══════════════════════════════════════════ */
+    .app-bar{
+      background:var(--primary);color:#fff;
+      height:64px;display:flex;align-items:center;
+      padding:0 28px;gap:14px;
+      box-shadow:var(--shadow-2);
+      position:sticky;top:0;z-index:100;flex-shrink:0;
+    }
+    .app-bar-logo{font-size:22px}
+    .app-bar-title{font-size:20px;font-weight:500;flex:1}
+    .app-bar-chip{
+      background:rgba(255,255,255,.15);border-radius:20px;
+      padding:4px 14px;font-size:12px;font-weight:500;
+    }
+    .app-bar-user{
+      display:flex;align-items:center;gap:8px;
+      font-size:13px;opacity:.9;
+    }
+    .avatar{
+      width:30px;height:30px;border-radius:50%;
+      background:rgba(255,255,255,.25);
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:700;
+    }
+
+    /* ══════════════════════════════════════════
+       SCENE 2 — DASHBOARD (PENDING APPROVALS)
+    ══════════════════════════════════════════ */
+    #scene-dashboard{background:var(--surface-2)}
+    .page{max-width:1300px;margin:0 auto;padding:24px}
+
+    /* Stat chips row */
+    .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+    .stat-chip{
+      background:#fff;border-radius:12px;box-shadow:var(--shadow-1);
+      padding:14px 20px;flex:1;min-width:130px;
+    }
+    .stat-chip .val{font-size:26px;font-weight:700;color:var(--primary)}
+    .stat-chip .lbl{font-size:11px;color:var(--on-surface-var);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+
+    /* Section heading */
+    .sec-hd{
+      font-size:11px;font-weight:500;text-transform:uppercase;
+      letter-spacing:.8px;color:var(--on-surface-var);margin-bottom:12px;
+    }
+
+    /* Card */
+    .card{background:#fff;border-radius:12px;box-shadow:var(--shadow-1);overflow:hidden;margin-bottom:18px}
+    .card-hd{
+      padding:14px 20px;border-bottom:1px solid var(--outline);
+      font-size:11px;font-weight:500;color:var(--on-surface-var);
+      text-transform:uppercase;letter-spacing:.8px;
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .card-body{padding:0}
+
+    /* Pending clients table */
+    table{width:100%;border-collapse:collapse}
+    thead th{
+      text-align:left;font-size:11px;font-weight:500;
+      text-transform:uppercase;letter-spacing:.7px;
+      color:var(--on-surface-var);
+      padding:10px 18px 8px;border-bottom:1px solid var(--outline);
+    }
+    tbody tr{border-bottom:1px solid var(--outline);transition:background .15s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:var(--surface-2)}
+    td{padding:12px 18px;vertical-align:middle}
+    td .primary{font-weight:500;color:var(--on-surface)}
+    td .secondary{font-size:11px;color:var(--on-surface-var);font-family:'Roboto Mono',monospace;margin-top:2px}
+
+    /* Chip */
+    .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
+    .chip-blue   {background:var(--primary-light);color:var(--primary)}
+    .chip-green  {background:var(--success-light);color:var(--success)}
+    .chip-yellow {background:var(--warning-light);color:#7A5200}
+    .chip-purple {background:#F3E8FD;color:#7B1FA2}
+    .dot-chip    {width:7px;height:7px;border-radius:50%;display:inline-block}
+
+    /* Approve button */
+    .btn-approve{
+      display:inline-flex;align-items:center;gap:5px;
+      background:none;border:1px solid var(--primary);
+      color:var(--primary);border-radius:20px;
+      padding:4px 14px;font-size:12px;font-weight:500;
+      cursor:pointer;font-family:inherit;
+      transition:background .15s,color .15s;
+    }
+    .btn-approve:hover{background:var(--primary-light)}
+    .btn-approve:disabled{opacity:.4;cursor:not-allowed}
+    .btn-approve.approved{background:var(--success-light);border-color:var(--success);color:var(--success)}
+
+    /* Approve all */
+    #btn-approve-all{
+      display:inline-flex;align-items:center;gap:6px;
+      background:var(--primary);color:#fff;
+      border:none;border-radius:20px;
+      padding:6px 18px;font-size:13px;font-weight:500;
+      cursor:pointer;font-family:inherit;
+      box-shadow:var(--shadow-1);
+      transition:box-shadow .2s,opacity .15s;
+    }
+    #btn-approve-all:hover{box-shadow:var(--shadow-2)}
+    #btn-approve-all:disabled{opacity:.4;cursor:not-allowed}
+
+    /* ══════════════════════════════════════════
+       SCENE 3 — LIVE TRAINING
+    ══════════════════════════════════════════ */
+    #scene-training{background:var(--surface-2)}
+
+    /* Grid */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media(max-width:900px){.grid-2{grid-template-columns:1fr}.grid-4{grid-template-columns:repeat(2,1fr)}}
+
+    /* Big metric cards */
+    .big-metric{
+      background:#fff;border-radius:12px;box-shadow:var(--shadow-1);
+      padding:18px 22px;
+    }
+    .big-metric .val{font-size:32px;font-weight:700;color:var(--primary);font-family:'Roboto Mono',monospace}
+    .big-metric .lbl{font-size:11px;color:var(--on-surface-var);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+    .big-metric .trend{font-size:12px;margin-top:6px;font-weight:500}
+    .trend-up  {color:var(--success)}
+    .trend-dn  {color:var(--error)}
+
+    /* Chart card */
+    .chart-card{background:#fff;border-radius:12px;box-shadow:var(--shadow-1);overflow:hidden}
+    #auc-canvas{width:100%;height:240px;display:block}
+
+    /* Round progress */
+    .round-prog-wrap{margin:0 22px 16px}
+    .prog-track{height:4px;background:var(--outline);border-radius:2px;overflow:hidden}
+    .prog-fill{height:100%;background:var(--primary);border-radius:2px;transition:width .8s ease;width:0}
+    .prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--on-surface-var);margin-top:5px}
+
+    /* Client status cards */
+    .client-status-card{
+      background:#fff;border-radius:12px;box-shadow:var(--shadow-1);
+      padding:14px 16px;display:flex;flex-direction:column;gap:6px;
+    }
+    .cs-header{display:flex;align-items:center;gap:8px}
+    .cs-icon{font-size:18px}
+    .cs-name{font-size:13px;font-weight:500;flex:1}
+    .cs-dot{width:8px;height:8px;border-radius:50%;background:var(--outline);flex-shrink:0}
+    .cs-dot.active{background:var(--success);animation:pulse 1.4s infinite}
+    .cs-dot.done{background:var(--success)}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+    .cs-depth{font-size:11px;font-weight:500;font-family:'Roboto Mono',monospace;color:#7B1FA2;background:#F3E8FD;padding:2px 8px;border-radius:10px;width:fit-content}
+    .cs-status{font-size:11px;color:var(--on-surface-var)}
+    .cs-metric{font-size:11px;font-family:'Roboto Mono',monospace;color:var(--primary)}
+
+    /* Round history card */
+    .rounds-card{background:#fff;border-radius:12px;box-shadow:var(--shadow-1);overflow:hidden}
+
+    /* Round status bar */
+    .round-status-bar{display:flex;align-items:center;gap:16px;background:#fff;border-radius:12px;box-shadow:var(--shadow-1);padding:14px 20px;margin-bottom:16px}
+    .rs-icon{font-size:20px;flex-shrink:0}
+    .rs-text{flex:1}
+    .rs-title{font-size:13px;font-weight:500;color:var(--on-surface)}
+    .rs-sub{font-size:11px;color:var(--on-surface-var);margin-top:2px}
+    .rs-right{text-align:right;flex-shrink:0}
+    .rs-pct{font-size:20px;font-weight:700;color:var(--primary);font-family:'Roboto Mono',monospace}
+    .rs-pct-lbl{font-size:10px;color:var(--on-surface-var);margin-top:1px}
+    /* Chart legend */
+    .chart-legend{display:flex;gap:14px;flex-wrap:wrap;padding:6px 18px 10px;border-bottom:1px solid var(--outline)}
+    .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--on-surface-var)}
+    .legend-dot{width:10px;height:3px;border-radius:2px}
+
+    /* Log */
+    .log-box{height:130px;overflow-y:auto;font-family:'Roboto Mono',monospace;font-size:11px;background:#F8F9FA;border:1px solid var(--outline);border-radius:6px;padding:8px 10px;line-height:1.6}
+    .log-ts{color:var(--on-surface-var)}
+    .log-info{color:var(--primary)}
+    .log-ok{color:var(--success)}
+    .log-warn{color:var(--warning)}
+
+    /* Transition helper */
+    .fade-in{animation:fadeIn .5s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SCENE 1 — LOGIN
+══════════════════════════════════════════════ -->
+<div class="scene" id="scene-login">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="login-logo-icon">&#x2B21;</span>
+      <div>
+        <div class="login-logo-text">FL Platform</div>
+        <div class="login-logo-sub">Federated Learning Server</div>
+      </div>
+    </div>
+    <div class="login-title">Operator Login</div>
+    <div class="field">
+      <label>Username</label>
+      <input id="login-user" type="text" placeholder="server_admin" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="login-pass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="off" />
+    </div>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">Login</button>
+    <div class="login-hint">Federated Learning Operator Console &mdash; Authorised access only</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCENE 2 — DASHBOARD / PENDING APPROVALS
+══════════════════════════════════════════════ -->
+<div class="scene" id="scene-dashboard">
+  <header class="app-bar">
+    <span class="app-bar-logo">&#x2B21;</span>
+    <span class="app-bar-title">FL Platform &mdash; Server Dashboard</span>
+    <span class="app-bar-chip" id="db-round-chip">Round 0 / 6</span>
+    <div class="app-bar-user">
+      <div class="avatar">SA</div>
+      <span>server_admin</span>
+    </div>
+  </header>
+  <div class="page">
+
+    <!-- Stats row -->
+    <div class="stat-row" id="db-stats">
+      <div class="stat-chip"><div class="val">1</div><div class="lbl">Active Projects</div></div>
+      <div class="stat-chip"><div class="val" id="db-connected">0</div><div class="lbl">Connected Hospitals</div></div>
+      <div class="stat-chip"><div class="val" id="db-pending-count">4</div><div class="lbl">Pending Approval</div></div>
+      <div class="stat-chip"><div class="val">0</div><div class="lbl">Rounds Completed</div></div>
+    </div>
+
+    <!-- Project info -->
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd">
+        Active Project
+      </div>
+      <div class="card-body" style="padding:16px 20px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:16px;font-weight:500">TCGA Federated Learning &mdash; Oncology Survival Prediction</div>
+            <div style="font-size:12px;color:var(--on-surface-var);margin-top:4px">Multi-task: Survival regression &bull; Toxicity classification &bull; Vital status binary</div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <span class="chip chip-blue">FedAvg + Momentum &beta;=0.9</span>
+              <span class="chip chip-blue">6 Rounds</span>
+              <span class="chip chip-purple">NAS Depth Search</span>
+              <span class="chip chip-green"><span class="dot-chip" style="background:var(--success)"></span> Accepting Clients</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--on-surface-var)">Min clients/round</div>
+            <div style="font-size:22px;font-weight:700;color:var(--primary)">4</div>
+          </div>
+        </div>
+        <!-- Progress bar -->
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--on-surface-var);margin-bottom:4px">
+            <span>Training Progress</span><span id="proj-prog-label">0 / 6 rounds</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" id="proj-prog-bar"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Hospitals -->
+    <div class="card">
+      <div class="card-hd">
+        Hospitals Requesting Access
+        <button id="btn-approve-all" onclick="approveAll()">&#10003; &nbsp;Approve All</button>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead>
+            <tr>
+              <th>Hospital</th>
+              <th>Hardware</th>
+              <th>Dataset</th>
+              <th>NAS Depth</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="pending-tbody">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="card">
+      <div class="card-hd">Server Log</div>
+      <div class="card-body" style="padding:12px">
+        <div class="log-box" id="log-box-db"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCENE 3 — LIVE TRAINING
+══════════════════════════════════════════════ -->
+<div class="scene" id="scene-training">
+  <header class="app-bar">
+    <span class="app-bar-logo">&#x2B21;</span>
+    <span class="app-bar-title">FL Platform &mdash; Live Federated Training</span>
+    <span class="app-bar-chip" id="tr-status-chip">Starting&hellip;</span>
+    <div class="app-bar-user">
+      <div class="avatar">SA</div>
+      <span>server_admin</span>
+    </div>
+  </header>
+  <div class="page">
+
+    <!-- Round status bar -->
+    <div class="round-status-bar fade-in">
+      <span class="rs-icon" id="rs-icon">&#9654;</span>
+      <div class="rs-text">
+        <div class="rs-title" id="round-label">Preparing Round 1&hellip;</div>
+        <div class="rs-sub" id="round-sub">Waiting for server</div>
+        <div class="prog-track" style="margin-top:8px"><div class="prog-fill" id="train-prog"></div></div>
+        <div class="prog-label"><span id="train-prog-label">Round 0 of 6</span><span id="train-prog-pct">0%</span></div>
+      </div>
+      <div class="rs-right">
+        <div class="rs-pct" id="train-prog-pct-big">0%</div>
+        <div class="rs-pct-lbl">complete</div>
+      </div>
+    </div>
+
+    <!-- Big metrics -->
+    <div class="grid-4" style="margin-bottom:16px">
+      <div class="big-metric fade-in">
+        <div class="val" id="tr-auc">&mdash;</div>
+        <div class="lbl">Global AUC-ROC</div>
+        <div class="trend" id="tr-auc-trend">&nbsp;</div>
+      </div>
+      <div class="big-metric fade-in">
+        <div class="val" id="tr-rmse">&mdash;</div>
+        <div class="lbl">Val RMSE</div>
+        <div class="trend" id="tr-rmse-trend">&nbsp;</div>
+      </div>
+      <div class="big-metric fade-in">
+        <div class="val" id="tr-tox">&mdash;</div>
+        <div class="lbl">Tox Accuracy</div>
+        <div class="trend" id="tr-tox-trend">&nbsp;</div>
+      </div>
+      <div class="big-metric fade-in">
+        <div class="val" id="tr-depth">&mdash;</div>
+        <div class="lbl">NAS Depth</div>
+        <div class="trend" id="tr-depth-sub" style="color:var(--on-surface-var)">&nbsp;</div>
+      </div>
+    </div>
+
+    <!-- Chart + round history -->
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="chart-card fade-in">
+        <div class="card-hd" style="padding:12px 18px;border-bottom:1px solid var(--outline)">
+          Model Performance Over Rounds
+          <span id="chart-best-label" style="font-size:11px;background:var(--success-light);color:var(--success);padding:2px 8px;border-radius:20px"></span>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1A73E8"></div>AUC-ROC</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#E37400"></div>ToxAcc</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#D93025;border-style:dashed"></div>Dip</div>
+        </div>
+        <canvas id="auc-canvas" style="height:210px"></canvas>
+      </div>
+      <div class="rounds-card fade-in">
+        <div class="card-hd" style="padding:12px 18px;border-bottom:1px solid var(--outline)">
+          Round History
+          <span class="chip chip-blue" id="rounds-count">0 rounds</span>
+        </div>
+        <div style="padding:0 0 8px">
+          <table>
+            <thead><tr><th>#</th><th>AUC</th><th>RMSE</th><th>ToxAcc</th><th>Depth</th><th>Samples</th></tr></thead>
+            <tbody id="rounds-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Client status cards -->
+    <div class="sec-hd">Participating Hospitals</div>
+    <div class="grid-4" style="margin-bottom:16px" id="client-cards"></div>
+
+    <!-- Log -->
+    <div class="card fade-in">
+      <div class="card-hd">Server Activity Log</div>
+      <div class="card-body" style="padding:12px">
+        <div class="log-box" id="log-box-tr"></div>
+      </div>
+    </div>
+
+  </div><!-- /page -->
+</div><!-- /scene-training -->
+
+<script>
+/* ================================================================
+   FL PLATFORM OPERATOR SIMULATION
+   Scene 1 → Login
+   Scene 2 → Dashboard with 4 pending hospitals, approve them
+   Scene 3 → Live federated training, rounds every ~5s with dips
+   ================================================================ */
+
+const CLIENTS = [
+  { name:'Oncology North',  hospital:'City Oncology North',    username:'oncology_north', ram:16,  cores:8,  gpu:false, rows:4812, depth:4, icon:'🏥' },
+  { name:'Oncology South',  hospital:'Regional Cancer South',  username:'oncology_south', ram:8,   cores:6,  gpu:false, rows:3201, depth:4, icon:'🏨' },
+  { name:'Oncology East',   hospital:'Eastside Oncology Inst', username:'oncology_east',  ram:16,  cores:12, gpu:true,  rows:5580, depth:5, icon:'🏦' },
+  { name:'Oncology West',   hospital:'West Cancer Center',     username:'oncology_west',  ram:4,   cores:4,  gpu:false, rows:1934, depth:3, icon:'🏗️' },
+];
+
+const TOTAL_ROUNDS = 6;
+
+// Realistic metric trajectories — dip at round 3, steady climb to finish
+const AUC_CURVE  = [0.634, 0.663, 0.648, 0.691, 0.722, 0.754];
+const RMSE_CURVE = [0.408, 0.381, 0.397, 0.364, 0.342, 0.318];
+const TOX_CURVE  = [0.621, 0.651, 0.635, 0.672, 0.699, 0.727];
+const DEPTH_SEQ  = [4, 4, 4, 5, 5, 5];  // NAS promotes depth after dip
+
+let roundCache = [];
+let backendRoundCache = [];
+let approvedCount = 0;
+let timerInterval = null;
+let timerSec = 5;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ── Scene switching ── */
+function showScene(id) {
+  document.querySelectorAll('.scene').forEach(s => {
+    s.classList.remove('visible');
+    s.style.display = 'none';
+    s.style.opacity = '0';
+  });
+  const s = document.getElementById(id);
+  s.style.display = 'flex';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { s.style.opacity = '1'; s.classList.add('visible'); });
+  });
+}
+
+/* ── Logging ── */
+function log(boxId, msg, cls = 'log-info') {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  const ts = new Date().toLocaleTimeString();
+  const el = document.createElement('div');
+  el.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="${cls}">${msg}</span>`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ── Typing effect ── */
+async function typeInto(el, text, delay = 55) {
+  el.value = '';
+  el.focus();
+  for (const ch of text) {
+    el.value += ch;
+    await sleep(delay + Math.random() * 25 - 12);
+  }
+  el.blur();
+}
+
+/* ════════════════════════════════════════════
+   SCENE 1 → LOGIN
+   ════════════════════════════════════════════ */
+async function autoType() {
+  await sleep(600);
+  await typeInto(document.getElementById('login-user'), 'server_admin', 70);
+  await sleep(300);
+  await typeInto(document.getElementById('login-pass'), 'Admin@FL2026', 65);
+  await sleep(500);
+  doLogin();
+}
+
+async function doLogin() {
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  btn.textContent = 'Logging in…';
+  await sleep(900);
+  await showDashboard();
+}
+
+/* ════════════════════════════════════════════
+   SCENE 2 → DASHBOARD + APPROVALS
+   ════════════════════════════════════════════ */
+async function showDashboard() {
+  buildPendingTable();
+  showScene('scene-dashboard');
+  log('log-box-db', 'Operator session started — server_admin logged in', 'log-ok');
+  log('log-box-db', `4 hospitals requesting access to project "TCGA Federated Learning"`);
+  CLIENTS.forEach(c => {
+    log('log-box-db', `[JOIN] ${c.hospital} (${c.username}) — ${c.ram}GB RAM, ${c.cores} cores${c.gpu ? ', GPU' : ''}, ${c.rows.toLocaleString()} rows`, 'log-warn');
+  });
+}
+
+function buildPendingTable() {
+  const tbody = document.getElementById('pending-tbody');
+  tbody.innerHTML = '';
+  CLIENTS.forEach((c, i) => {
+    const tr = document.createElement('tr');
+    tr.id = `pending-row-${i}`;
+    tr.innerHTML = `
+      <td>
+        <div class="primary">${c.icon} ${c.hospital}</div>
+        <div class="secondary">${c.username}</div>
+      </td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span class="chip chip-blue">${c.ram} GB RAM</span>
+          <span class="chip chip-blue">${c.cores} cores</span>
+          ${c.gpu ? '<span class="chip chip-purple">⚡ GPU</span>' : ''}
+        </div>
+      </td>
+      <td>
+        <div class="primary">client_${i+1}.csv</div>
+        <div class="secondary">${c.rows.toLocaleString()} rows · schema ✓</div>
+      </td>
+      <td>
+        <span class="chip chip-purple" id="depth-chip-${i}">Depth ${c.depth}</span>
+      </td>
+      <td>
+        <span class="chip chip-yellow" id="status-chip-${i}">
+          <span class="dot-chip" style="background:var(--warning)"></span>
+          Pending
+        </span>
+      </td>
+      <td>
+        <button class="btn-approve" id="approve-btn-${i}" onclick="approveOne(${i})">✓ Approve</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function approveOne(i) {
+  const btn = document.getElementById(`approve-btn-${i}`);
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Approving…';
+  await sleep(700);
+
+  btn.textContent = '✓ Approved';
+  btn.classList.add('approved');
+
+  document.getElementById(`status-chip-${i}`).className = 'chip chip-green';
+  document.getElementById(`status-chip-${i}`).innerHTML = `<span class="dot-chip" style="background:var(--success)"></span> Connected`;
+
+  approvedCount++;
+  document.getElementById('db-connected').textContent = approvedCount;
+  document.getElementById('db-pending-count').textContent = 4 - approvedCount;
+
+  log('log-box-db', `✓ ${CLIENTS[i].hospital} approved — now connected participant`, 'log-ok');
+
+  if (approvedCount === 4) {
+    await sleep(800);
+    document.getElementById('btn-approve-all').disabled = true;
+    log('log-box-db', 'All 4 hospitals approved — initiating federated training…', 'log-ok');
+    await sleep(1000);
+    await startTraining();
+  }
+}
+
+async function approveAll() {
+  const btn = document.getElementById('btn-approve-all');
+  btn.disabled = true;
+  btn.textContent = '⏳ Approving…';
+
+  for (let i = 0; i < 4; i++) {
+    await approveOne(i);
+    await sleep(600);
+  }
+}
+
+/* ════════════════════════════════════════════
+   SCENE 3 → LIVE TRAINING
+   ════════════════════════════════════════════ */
+async function startTraining() {
+  buildClientCards();
+  showScene('scene-training');
+
+  log('log-box-tr', '══════════════════════════════════════');
+  log('log-box-tr', 'Federated Learning session started', 'log-ok');
+  log('log-box-tr', `Project: TCGA Federated Learning | Rounds: ${TOTAL_ROUNDS} | Clients: 4`);
+  log('log-box-tr', '══════════════════════════════════════');
+
+  // Start real backend
+  try {
+    await fetch('/api/sim/start', { method: 'POST' });
+    log('log-box-tr', 'Backend training started (/api/sim/start)', 'log-ok');
+  } catch(e) {
+    log('log-box-tr', 'Using pre-computed metrics (backend unavailable)', 'log-warn');
+  }
+
+  drawChart(); // empty chart
+
+  // Run rounds with 5s spacing
+  for (let rn = 1; rn <= TOTAL_ROUNDS; rn++) {
+    await runRound(rn);
+  }
+
+  finishTraining();
+}
+
+function buildClientCards() {
+  const container = document.getElementById('client-cards');
+  container.innerHTML = '';
+  CLIENTS.forEach((c, i) => {
+    container.insertAdjacentHTML('beforeend', `
+      <div class="client-status-card">
+        <div class="cs-header">
+          <span class="cs-icon">${c.icon}</span>
+          <span class="cs-name">${c.name}</span>
+          <span class="cs-dot active" id="cs-dot-${i}"></span>
+        </div>
+        <span class="cs-depth" id="cs-depth-${i}">Depth ${c.depth}</span>
+        <div class="cs-status" id="cs-status-${i}">Waiting for round 1…</div>
+        <div class="cs-metric" id="cs-metric-${i}"></div>
+      </div>`);
+  });
+}
+
+async function runRound(rn) {
+  const isLast = rn === TOTAL_ROUNDS;
+  document.getElementById('round-label').textContent = `Round ${rn} of ${TOTAL_ROUNDS} — Training`;
+  document.getElementById('round-sub').textContent = 'Clients training locally…';
+  document.getElementById('tr-status-chip').textContent = `Round ${rn} / ${TOTAL_ROUNDS}`;
+
+  // Update client statuses
+  CLIENTS.forEach((c, i) => {
+    document.getElementById(`cs-status-${i}`).textContent = `Round ${rn} — local training…`;
+    document.getElementById(`cs-dot-${i}`).className = 'cs-dot active';
+    document.getElementById(`cs-metric-${i}`).textContent = '';
+  });
+
+  log('log-box-tr', `Round ${rn} started — all 4 clients training locally`);
+
+  // 5-second countdown ring
+  await countdown(5);
+
+  // Aggregation step
+  document.getElementById('round-sub').textContent = 'Aggregating updates (FedAvg + Momentum)…';
+  log('log-box-tr', `Round ${rn} — FedAvg aggregation + NAS depth evaluation`);
+  await sleep(600);
+
+  // Try real backend data, fall back to pre-computed
+  let auc  = AUC_CURVE[rn - 1];
+  let rmse = RMSE_CURVE[rn - 1];
+  let tox  = TOX_CURVE[rn - 1];
+  let depth = DEPTH_SEQ[rn - 1];
+  let samples = CLIENTS.reduce((s, c) => s + c.rows, 0);
+
+  try {
+    const status = await fetch('/api/sim/status').then(r => r.json());
+    const backendRound = status.rounds.find(r => r.round === rn);
+    if (backendRound) {
+      auc   = backendRound.global_auc           || auc;
+      rmse  = backendRound.global_val_rmse      || rmse;
+      tox   = backendRound.global_tox_accuracy  || tox;
+      depth = backendRound.recommended_depth     || depth;
+      samples = backendRound.samples || samples;
+    }
+  } catch(e) {}
+
+  const rec = { round: rn, auc, rmse, tox, depth, samples };
+  roundCache.push(rec);
+
+  // Render metrics
+  renderRound(rec, rn > 1 ? roundCache[rn - 2] : null);
+
+  // Update client cards
+  CLIENTS.forEach((c, i) => {
+    const myDepth = i === 2 ? Math.min(depth + 1, 6) : (i === 3 ? Math.max(depth - 1, 2) : depth);
+    document.getElementById(`cs-status-${i}`).textContent = `Round ${rn} complete ✓`;
+    document.getElementById(`cs-dot-${i}`).className = 'cs-dot done';
+    document.getElementById(`cs-depth-${i}`).textContent = `Depth ${myDepth}`;
+    document.getElementById(`cs-metric-${i}`).textContent =
+      `Loss ${(0.3 + Math.random() * 0.15).toFixed(3)} · ${c.rows.toLocaleString()} samples`;
+  });
+
+  log('log-box-tr', `Round ${rn} ✓ — AUC ${auc.toFixed(4)} | RMSE ${rmse.toFixed(4)} | ToxAcc ${tox.toFixed(4)} | Depth ${depth}`,
+    rn === 4 ? 'log-warn' : 'log-ok');
+
+  if (!isLast) {
+    document.getElementById('round-sub').textContent = `Round ${rn} complete — waiting for round ${rn + 1}…`;
+  }
+  await sleep(300);
+}
+
+function renderRound(rec, prev) {
+  const { round: rn, auc, rmse, tox, depth, samples } = rec;
+
+  // Update big metrics
+  setMetric('tr-auc',  auc.toFixed(4),  'tr-auc-trend',  prev ? prev.auc  : null, auc,  false);
+  setMetric('tr-rmse', rmse.toFixed(4), 'tr-rmse-trend', prev ? prev.rmse : null, rmse, true);
+  setMetric('tr-tox',  tox.toFixed(4),  'tr-tox-trend',  prev ? prev.tox  : null, tox,  false);
+
+  const depthEl = document.getElementById('tr-depth');
+  depthEl.textContent = depth;
+  depthEl.style.color = '#7B1FA2';
+  document.getElementById('tr-depth-sub').textContent = `NAS selected for round ${rn + 1}`;
+
+  // Progress bar
+  const pct = Math.round(rn / TOTAL_ROUNDS * 100);
+  document.getElementById('train-prog').style.width = pct + '%';
+  document.getElementById('train-prog-label').textContent = `Round ${rn} of ${TOTAL_ROUNDS}`;
+  document.getElementById('train-prog-pct').textContent = pct + '%';
+  document.getElementById('train-prog-pct-big').textContent = pct + '%';
+
+  // Best AUC label
+  const bestAuc = Math.max(...roundCache.map(r => r.auc));
+  document.getElementById('chart-best-label').textContent = `Best: ${bestAuc.toFixed(4)}`;
+
+  // Round count
+  document.getElementById('rounds-count').textContent = `${rn} round${rn > 1 ? 's' : ''}`;
+
+  // Table row
+  const tbody = document.getElementById('rounds-tbody');
+  if (rn === 1) tbody.innerHTML = '';
+  const isDip = prev && auc < prev.auc;
+  const tr = document.createElement('tr');
+  tr.style.animation = 'fadeIn .4s ease';
+  tr.innerHTML = `
+    <td><span class="chip chip-blue">#${rn}</span></td>
+    <td style="font-weight:500;color:${isDip ? 'var(--error)' : 'var(--success)'}">
+      ${isDip ? '▼ ' : '▲ '}${auc.toFixed(4)}
+    </td>
+    <td>${rmse.toFixed(4)}</td>
+    <td>${tox.toFixed(4)}</td>
+    <td><span class="chip chip-purple">d${depth}</span></td>
+    <td>${samples.toLocaleString()}</td>
+  `;
+  tbody.prepend(tr);
+
+  // Chart
+  drawChart();
+}
+
+function setMetric(valId, valStr, trendId, prevVal, newVal, lowerIsBetter) {
+  const valEl = document.getElementById(valId);
+  const trendEl = document.getElementById(trendId);
+  valEl.textContent = valStr;
+
+  if (prevVal === null) { trendEl.innerHTML = '&nbsp;'; return; }
+  const diff = newVal - prevVal;
+  const better = lowerIsBetter ? diff < 0 : diff > 0;
+  const arrow = diff > 0 ? '▲' : '▼';
+  const cls   = better ? 'trend-up' : 'trend-dn';
+  trendEl.innerHTML = `<span class="${cls}">${arrow} ${Math.abs(diff).toFixed(4)}</span>`;
+}
+
+/* ── Silent 5-second wait (no visible timer) ── */
+async function countdown(seconds) {
+  await sleep(seconds * 1000);
+}
+
+/* ── Polished multi-metric chart with bezier curves ── */
+function drawChart() {
+  const canvas = document.getElementById('auc-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 560;
+  const H = 210;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.clearRect(0, 0, W, H);
+
+  const aucs = roundCache.map(r => r.auc);
+  const toxs = roundCache.map(r => r.tox);
+  const n = aucs.length;
+
+  const PL=52, PR=20, PT=18, PB=34;
+  const cW = W - PL - PR, cH = H - PT - PB;
+  const lo = 0.54, hi = 0.80;
+
+  const px = i => PL + i * cW / (TOTAL_ROUNDS - 1);
+  const py = v => PT + cH - (v - lo) / (hi - lo) * cH;
+
+  // ── Background grid ──
+  const yTicks = [0.56, 0.60, 0.64, 0.68, 0.72, 0.76, 0.80];
+  yTicks.forEach(v => {
+    const y = py(v);
+    ctx.strokeStyle = v % 0.08 < 0.001 ? '#C5C7CB' : '#EBEBED';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PL, y); ctx.lineTo(W - PR, y); ctx.stroke();
+    ctx.fillStyle = '#9AA0A6';
+    ctx.font = '9px Roboto Mono,monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(2), PL - 5, y + 3);
+  });
+
+  // Vertical grid per round
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    ctx.strokeStyle = '#EBEBED'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(px(i), PT); ctx.lineTo(px(i), PT + cH); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // X axis line
+  ctx.strokeStyle = '#DADCE0'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PL, PT + cH); ctx.lineTo(W - PR, PT + cH); ctx.stroke();
+
+  // X labels
+  ctx.textAlign = 'center';
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const done = i < n;
+    ctx.fillStyle = done ? '#5F6368' : '#C5C7CB';
+    ctx.font = done ? 'bold 10px Roboto,sans-serif' : '10px Roboto,sans-serif';
+    ctx.fillText(`Round ${i + 1}`, px(i), H - PB + 14);
+  }
+  ctx.textAlign = 'left';
+
+  // ── Helper: draw a smooth bezier line ──
+  function drawBezierLine(pts, color, lineWidth, dashed) {
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (dashed) ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+      const cpx = (pts[i-1][0] + pts[i][0]) / 2;
+      ctx.bezierCurveTo(cpx, pts[i-1][1], cpx, pts[i][1], pts[i][0], pts[i][1]);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ── Helper: draw gradient area under curve ──
+  function drawGradientArea(pts, colorTop, colorBot) {
+    if (pts.length < 2) return;
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, PT, 0, PT + cH);
+    grad.addColorStop(0, colorTop);
+    grad.addColorStop(1, colorBot);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], PT + cH);
+    ctx.lineTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) {
+      const cpx = (pts[i-1][0] + pts[i][0]) / 2;
+      ctx.bezierCurveTo(cpx, pts[i-1][1], cpx, pts[i][1], pts[i][0], pts[i][1]);
+    }
+    ctx.lineTo(pts[pts.length-1][0], PT + cH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  if (n === 0) {
+    ctx.fillStyle = '#9AA0A6'; ctx.font = '13px Roboto,sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Waiting for first round…', W / 2, H / 2);
+    return;
+  }
+
+  const aucPts = aucs.map((v, i) => [px(i), py(v)]);
+  const toxPts = toxs.map((v, i) => [px(i), py(v)]);
+
+  // Ghost future positions
+  const midY = py((lo + hi) / 2);
+  for (let i = n; i < TOTAL_ROUNDS; i++) {
+    ctx.fillStyle = '#E8EAED';
+    ctx.beginPath(); ctx.arc(px(i), midY, 5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // ── AUC: gradient fill + bezier line ──
+  drawGradientArea(aucPts, 'rgba(26,115,232,.18)', 'rgba(26,115,232,.01)');
+  drawBezierLine(aucPts, '#1A73E8', 2.5, false);
+
+  // ── ToxAcc: lighter line ──
+  if (n > 1) drawBezierLine(toxPts, '#E37400', 1.8, false);
+
+  // ── Dip column highlight ──
+  for (let i = 1; i < n; i++) {
+    if (aucs[i] < aucs[i-1]) {
+      ctx.save();
+      // Shaded column
+      ctx.fillStyle = 'rgba(217,48,37,.06)';
+      const bw = cW / (TOTAL_ROUNDS - 1);
+      ctx.fillRect(px(i) - bw/2, PT, bw, cH);
+      // Simple pill badge above the dot
+      const bx = px(i);
+      const by = py(aucs[i]) - 20;
+      const bw2 = 28, bh2 = 13;
+      ctx.fillStyle = 'rgba(217,48,37,.82)';
+      ctx.fillRect(bx - bw2/2, by, bw2, bh2);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 8px Roboto,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('DIP', bx, by + bh2 / 2);
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+      ctx.restore();
+    }
+  }
+
+  // ── AUC dots ──
+  aucs.forEach((v, i) => {
+    const isDip = i > 0 && v < aucs[i - 1];
+    const [x, y] = aucPts[i];
+    // Outer glow
+    ctx.save();
+    ctx.shadowColor = isDip ? 'rgba(217,48,37,.4)' : 'rgba(26,115,232,.35)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = isDip ? '#D93025' : '#1A73E8';
+    ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // White center
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+    // Value label
+    const lx = x, ly = y - 12;
+    ctx.save();
+    ctx.fillStyle = isDip ? 'rgba(217,48,37,.9)' : 'rgba(26,115,232,.9)';
+    ctx.font = 'bold 9px Roboto Mono,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(3), lx, ly);
+    ctx.restore();
+  });
+
+  // ── ToxAcc dots ──
+  toxs.forEach((v, i) => {
+    const [x, y] = toxPts[i];
+    ctx.save();
+    ctx.shadowColor = 'rgba(227,116,0,.3)';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = '#E37400';
+    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Best AUC annotation
+  const bestI = aucs.indexOf(Math.max(...aucs));
+  if (bestI >= 0 && n > 1) {
+    const [bx, by] = aucPts[bestI];
+    ctx.save();
+    ctx.strokeStyle = '#1E8E3E'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(bx, by + 6); ctx.lineTo(bx, PT + cH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(30,142,62,.9)';
+    const lbl = 'BEST';
+    ctx.font = 'bold 8px Roboto,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.beginPath(); ctx.roundRect(bx - 16, PT + cH - 14, 32, 12, 3); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText(lbl, bx, PT + cH - 5);
+    ctx.restore();
+  }
+}
+
+function finishTraining() {
+  document.getElementById('round-label').textContent = '✓ Training Complete!';
+  document.getElementById('round-sub').textContent = `${TOTAL_ROUNDS} rounds · global model saved to server`;
+  document.getElementById('tr-status-chip').textContent = '✓ Complete';
+  document.getElementById('tr-status-chip').style.background = 'rgba(30,142,62,.25)';
+  document.getElementById('train-prog').style.width = '100%';
+  document.getElementById('train-prog-label').textContent = `Round ${TOTAL_ROUNDS} of ${TOTAL_ROUNDS}`;
+  document.getElementById('train-prog-pct').textContent = '100%';
+  document.getElementById('train-prog-pct-big').textContent = '100%';
+  document.getElementById('rs-icon').textContent = '✓';
+
+  CLIENTS.forEach((c, i) => {
+    document.getElementById(`cs-dot-${i}`).className = 'cs-dot done';
+    document.getElementById(`cs-status-${i}`).textContent = 'All rounds complete ✓';
+  });
+
+  const bestAuc = Math.max(...roundCache.map(r => r.auc));
+  log('log-box-tr', '══════════════════════════════════════');
+  log('log-box-tr', `✓ Federated session complete — best AUC: ${bestAuc.toFixed(4)}`, 'log-ok');
+  log('log-box-tr', 'Global model .pt saved to server/models/', 'log-ok');
+  log('log-box-tr', '══════════════════════════════════════');
+}
+
+/* ── Init ── */
+window.addEventListener('load', () => {
+  showScene('scene-login');
+  autoType();
+  window.addEventListener('resize', () => { if (roundCache.length) drawChart(); });
+});
+</script>
+</body>
+</html>

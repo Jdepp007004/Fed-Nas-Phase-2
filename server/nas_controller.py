@@ -120,7 +120,7 @@ def evaluate_architecture_candidates(
         score = depth_cost / max(delta_norm, 1e-8)  # lower is better
 
         if score < best_score:
-            best_score = best_depth
+            best_score = score
             best_depth = int(depth)
 
     return max(2, min(best_depth, MAX_DEPTH))

@@ -1,33 +1,173 @@
 version: "3.9"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# FL Platform — Phase 2 Docker Compose
+# Services: fl-server · fl-worker · postgres · redis · prometheus · jaeger
+# ─────────────────────────────────────────────────────────────────────────────
+
+x-fl-env: &fl-env
+  SERVER_HOST: "0.0.0.0"
+  SERVER_PORT: "8000"
+  # ── Secrets (override via .env or CI/CD) ────────────────────────────────────
+  NGROK_AUTH_TOKEN:   ${NGROK_AUTH_TOKEN:-}
+  JWT_SECRET:         ${JWT_SECRET:-change_me_in_production}
+  FL_ENCRYPTION_KEY:  ${FL_ENCRYPTION_KEY:-}
+  VAL_CSV_PATH:       ${VAL_CSV_PATH:-}
+  # ── Phase 2A ────────────────────────────────────────────────────────────────
+  DATABASE_URL:       postgresql+psycopg2://fl_user:fl_pass@postgres:5432/fl_platform
+  REDIS_URL:          redis://redis:6379/0
+  # ── Phase 2B ────────────────────────────────────────────────────────────────
+  CELERY_BROKER_URL:  redis://redis:6379/0
+  CELERY_RESULT_URL:  redis://redis:6379/1
+  # ── Phase 2C ────────────────────────────────────────────────────────────────
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_SERVICE_NAME:  fl-platform-server
+  # ── Storage ────────────────────────────────────────────────────────────────
+  # S3_BUCKET: your-bucket-name   # Uncomment to use S3 model storage
+  # AWS_ACCESS_KEY_ID: ...
+  # AWS_SECRET_ACCESS_KEY: ...
+
 services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: fl_postgres
+    environment:
+      POSTGRES_USER:     fl_user
+      POSTGRES_PASSWORD: fl_pass
+      POSTGRES_DB:       fl_platform
+    volumes:
+      - fl_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fl_user -d fl_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: fl_redis
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - fl_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── DB migration (runs Alembic before server starts) ─────────────────────
+  db-migrate:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: fl_migrate
+    command: >
+      sh -c "
+        cd /app &&
+        alembic upgrade head &&
+        echo 'Alembic migrations complete.'
+      "
+    environment:
+      <<: *fl-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"   # run once and exit
+
+  # ─── FastAPI server ────────────────────────────────────────────────────────
   fl-server:
     build:
-      context: ..           # repository root (so COPY shared/ works)
+      context: ..
       dockerfile: server/Dockerfile
     container_name: fl_platform_server
     ports:
       - "8000:8000"
     environment:
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8000
-      # Set these in a .env file or via CI/CD secrets:
-      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN:-}
-      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
-      - FL_ENCRYPTION_KEY=${FL_ENCRYPTION_KEY:-}
-      - VAL_CSV_PATH=${VAL_CSV_PATH:-}
+      <<: *fl-env
     volumes:
-      # Persist database and saved model files across container restarts
-      - fl_db:/app/server/database.json
       - fl_models:/app/server/models
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 20s
+
+  # ─── Celery worker ────────────────────────────────────────────────────────
+  fl-worker:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: fl_celery_worker
+    command: >
+      sh -c "cd /app/server && celery -A celery_app worker
+             --loglevel=info --concurrency=2 -Q celery"
+    environment:
+      <<: *fl-env
+    volumes:
+      - fl_models:/app/server/models
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Celery beat (periodic tasks) ─────────────────────────────────────────
+  fl-beat:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    container_name: fl_celery_beat
+    command: >
+      sh -c "cd /app/server && celery -A celery_app beat
+             --loglevel=info --schedule=/tmp/celerybeat-schedule"
+    environment:
+      <<: *fl-env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Prometheus ───────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.50.1
+    container_name: fl_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - fl_prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+    restart: unless-stopped
+
+  # ─── Jaeger (OTel / distributed tracing) ──────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: fl_jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4318:4318"     # OTLP HTTP receiver
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    restart: unless-stopped
 
 volumes:
-  fl_db:
+  fl_pgdata:
+  fl_redis_data:
   fl_models:
+  fl_prometheus_data:

@@ -1,0 +1,153 @@
+{
+  "config": {
+    "rounds": 6,
+    "local_epochs": 1,
+    "cnn_epochs": 6,
+    "seeds": [
+      42
+    ],
+    "output": ".benchmarks\\demo_benchmark_results.json"
+  },
+  "results": [
+    {
+      "method": "Logistic regression",
+      "auc": 0.780651402773299,
+      "accuracy": 0.7378640776699029,
+      "balanced_accuracy": 0.7169042244437278,
+      "f1": 0.5909090909090909,
+      "seed": 42
+    },
+    {
+      "method": "Random forest",
+      "auc": 0.8944276039987101,
+      "accuracy": 0.843042071197411,
+      "balanced_accuracy": 0.7712544340535312,
+      "f1": 0.686084142394822,
+      "seed": 42
+    },
+    {
+      "method": "Histogram gradient boosting",
+      "auc": 0.9118735891647856,
+      "accuracy": 0.8770226537216829,
+      "balanced_accuracy": 0.8208835859400193,
+      "f1": 0.7610062893081762,
+      "seed": 42
+    },
+    {
+      "method": "Centralised 1D CNN",
+      "auc": 0.5702160593356982,
+      "accuracy": 0.7168284789644013,
+      "balanced_accuracy": 0.5,
+      "f1": 0.0,
+      "seed": 42
+    },
+    {
+      "method": "FedAvg Supernet",
+      "auc": 0.5118348919703322,
+      "accuracy": 0.6019417475728155,
+      "balanced_accuracy": 0.483818123186069,
+      "f1": 0.23125,
+      "global_rmse": 0.16816017031669617,
+      "global_toxicity_accuracy": 1.0,
+      "round_history": [
+        {
+          "round": 1,
+          "global_val_rmse": 0.8804356455802917,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.46254756530151564,
+          "timestamp": "2026-07-12T17:03:06.390105+00:00Z"
+        },
+        {
+          "round": 2,
+          "global_val_rmse": 0.5387024283409119,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.5143502096098033,
+          "timestamp": "2026-07-12T17:03:11.308584+00:00Z"
+        },
+        {
+          "round": 3,
+          "global_val_rmse": 0.3878578245639801,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.4728281199613028,
+          "timestamp": "2026-07-12T17:03:16.823834+00:00Z"
+        },
+        {
+          "round": 4,
+          "global_val_rmse": 0.3710462152957916,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.4952724927442761,
+          "timestamp": "2026-07-12T17:03:22.562802+00:00Z"
+        },
+        {
+          "round": 5,
+          "global_val_rmse": 0.14067432284355164,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.5239858110287003,
+          "timestamp": "2026-07-12T17:03:28.398582+00:00Z"
+        },
+        {
+          "round": 6,
+          "global_val_rmse": 0.16816017031669617,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.5118348919703322,
+          "timestamp": "2026-07-12T17:03:34.173572+00:00Z"
+        }
+      ],
+      "seed": 42
+    },
+    {
+      "method": "FL Platform (FedProx + momentum)",
+      "auc": 0.5995614317961947,
+      "accuracy": 0.48220064724919093,
+      "balanced_accuracy": 0.5472170267655595,
+      "f1": 0.4326241134751773,
+      "global_rmse": 1.1471354961395264,
+      "global_toxicity_accuracy": 1.0,
+      "round_history": [
+        {
+          "round": 1,
+          "global_val_rmse": 0.07529239356517792,
+          "global_tox_accuracy": 0.0,
+          "global_auc": 0.5856755885198324,
+          "timestamp": "2026-07-12T17:03:40.627722+00:00Z"
+        },
+        {
+          "round": 2,
+          "global_val_rmse": 0.13388441503047943,
+          "global_tox_accuracy": 0.0,
+          "global_auc": 0.5487197678168333,
+          "timestamp": "2026-07-12T17:03:47.250636+00:00Z"
+        },
+        {
+          "round": 3,
+          "global_val_rmse": 0.25759804248809814,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.5686746210899709,
+          "timestamp": "2026-07-12T17:03:54.002033+00:00Z"
+        },
+        {
+          "round": 4,
+          "global_val_rmse": 0.45564690232276917,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.655079006772009,
+          "timestamp": "2026-07-12T17:04:00.401884+00:00Z"
+        },
+        {
+          "round": 5,
+          "global_val_rmse": 0.8285539150238037,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.6375104804901645,
+          "timestamp": "2026-07-12T17:04:06.726115+00:00Z"
+        },
+        {
+          "round": 6,
+          "global_val_rmse": 1.1471354961395264,
+          "global_tox_accuracy": 1.0,
+          "global_auc": 0.5995614317961947,
+          "timestamp": "2026-07-12T17:04:13.401554+00:00Z"
+        }
+      ],
+      "seed": 42
+    }
+  ]
+}

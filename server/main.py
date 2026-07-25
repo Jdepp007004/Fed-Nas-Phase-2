@@ -17,9 +17,25 @@ from fastapi.templating import Jinja2Templates  # noqa: E402
 
 from auth_router import router as auth_router  # noqa: E402
 from project_router import router as project_router, set_val_dataloader  # noqa: E402
+from demo_router import router as demo_router, sim_router  # noqa: E402
 from ngrok_tunnel import start_ngrok_tunnel, get_tunnel_url  # noqa: E402
 from db_handler import read_db, write_db  # noqa: E402
 from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import Response  # noqa: E402
+
+# Phase 2C: observability (graceful degradation if not installed)
+try:
+    from otel_setup import _try_init as _otel_init
+    _HAVE_OTEL = True
+except Exception:  # noqa: BLE001
+    _HAVE_OTEL = False
+
+try:
+    from metrics import prometheus_response
+    _HAVE_METRICS = True
+except Exception:  # noqa: BLE001
+    _HAVE_METRICS = False
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 SERVER_HOST = os.environ.get("SERVER_HOST", "0.0.0.0")
@@ -41,6 +57,10 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start ngrok tunnel and prepare validation dataloader on startup."""
+
+    # ── OTel initialisation ──────────────────────────────────────────────────
+    if _HAVE_OTEL:
+        _otel_init()
 
     # ── Start ngrok ──────────────────────────────────────────────────────────
     if NGROK_AUTH_TOKEN:
@@ -73,13 +93,13 @@ async def lifespan(app: FastAPI):
 
 
 def _ensure_default_project():
-    """Create a default demo project if no projects exist."""
+    """Create a default project if no projects exist."""
     import uuid, datetime  # noqa: E401
     db = read_db()
     if not db.get("projects"):
         proj = {
             "proj_id":              str(uuid.uuid4()),
-            "name":                 "TCGA Federated Learning Demo",
+            "name":                 "TCGA Federated Learning",
             "admin_id":             "server",
             "data_schema":          SERVER_SCHEMA,
             "schema_version":       "1.0.0",
@@ -93,7 +113,7 @@ def _ensure_default_project():
             "momentum_beta":        0.9,
             "recommended_depth":    MODEL_CONFIG["max_depth"],
             "accepting_clients":    True,
-            "created_at":           datetime.datetime.utcnow().isoformat() + "Z",
+            "created_at":           datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
         }
         db["projects"].append(proj)
         write_db(db)
@@ -109,6 +129,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow any origin since clients might be on localhost or ngrok
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Mount static files
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -116,6 +144,8 @@ if os.path.isdir(STATIC_DIR):
 # Mount routers
 app.include_router(auth_router)
 app.include_router(project_router)
+app.include_router(sim_router)   # /api/sim/*  — used by simulation page
+app.include_router(demo_router)  # /api/demo/* — backward-compat alias
 
 
 # ─── Utility Endpoints ────────────────────────────────────────────────────────
@@ -133,6 +163,22 @@ async def status():
         "server_version": SERVER_VERSION,
     })
 
+
+@app.get("/metrics")
+async def metrics_endpoint():
+    """
+    GET /metrics — Prometheus scrape endpoint.
+    Returns metrics in prometheus_client exposition format.
+    If prometheus_client is not installed, returns a 200 with a note.
+    """
+    if _HAVE_METRICS:
+        body, content_type = prometheus_response()
+        return Response(content=body, media_type=content_type)
+    return Response(
+        content=b"# prometheus-client not installed\n",
+        media_type="text/plain",
+        status_code=200,
+    )
 
 # ─── Server Dashboard ─────────────────────────────────────────────────────────
 
@@ -152,7 +198,21 @@ async def dashboard(request: Request):
         "users":          db.get("users", []),
         "ngrok_url":      tunnel_url,
         "server_version": SERVER_VERSION,
+        "jwt_secret":     os.environ.get("JWT_SECRET", "dev_secret_change_in_production"),
     })
+
+
+@app.get("/simulation", response_class=HTMLResponse)
+async def simulation(request: Request):
+    """Live federated session viewer — 4 hospitals join and train round-by-round."""
+    return templates.TemplateResponse("simulation.html", {"request": request})
+
+
+@app.get("/demo", response_class=HTMLResponse)
+async def demo_redirect(request: Request):
+    """Backward-compat redirect to /simulation."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/simulation", status_code=301)
 
 
 # ─── Entry point ──────────────────────────────────────────────────────────────
@@ -163,5 +223,5 @@ if __name__ == "__main__":
         "main:app",
         host=SERVER_HOST,
         port=SERVER_PORT,
-        reload=False,
+        reload=True,
     )

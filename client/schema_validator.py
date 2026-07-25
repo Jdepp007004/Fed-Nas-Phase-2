@@ -18,6 +18,18 @@ from shared.model_schema import MIN_SAMPLES  # noqa: E402
 ValidationResult = namedtuple("ValidationResult", ["passed", "errors", "warnings"])
 
 
+def validate_csv_schema(df: pd.DataFrame, required_columns) -> list[str]:
+    """Compatibility helper returning only blocking schema errors.
+
+    ``required_columns`` may be a full server schema (the preferred form) or a
+    sequence of column names used by small integrations.
+    """
+    schema = required_columns if isinstance(required_columns, dict) else {
+        "required_columns": list(required_columns), "min_samples": 0,
+    }
+    return list(validate_schema(df, schema).errors)
+
+
 # ─── Main Validator ──────────────────────────────────────────────────────────
 
 def validate_schema(df: pd.DataFrame, expected_schema: dict) -> ValidationResult:

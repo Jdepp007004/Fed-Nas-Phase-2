@@ -83,7 +83,12 @@ def load_tcga_dataset(csv_path: str, schema: dict) -> pd.DataFrame:
     for col in df.columns:
         if df[col].isnull().any():
             if pd.api.types.is_numeric_dtype(df[col]):
-                df[col] = df[col].fillna(df[col].median())
+                observed = df[col].dropna()
+                median = observed.median() if not observed.empty else 0.0
+                # Entirely missing clinical fields are common in individual
+                # silos.  A NaN median would leak through into torch tensors
+                # and turn every downstream loss into NaN.
+                df[col] = df[col].fillna(0.0 if pd.isna(median) else median)
             else:
                 mode_val = df[col].mode()
                 df[col] = df[col].fillna(mode_val[0] if not mode_val.empty else "unknown")
@@ -126,6 +131,13 @@ def preprocess_features(df: pd.DataFrame, schema: dict) -> tuple:
     feature_df = df.drop(
         columns=[v for v in target_cols.values() if v in df.columns],
         errors="ignore",
+    )
+
+    # These fields are only known after the survival outcome has occurred.
+    # Keeping them as predictors of vital_status creates target leakage and
+    # makes a clinical benchmark look unrealistically perfect.
+    feature_df = feature_df.drop(
+        columns=["days_to_death", "days_to_last_follow_up"], errors="ignore"
     )
 
     # ── Label-encode low-cardinality categoricals ────────────────────────────
@@ -184,7 +196,10 @@ def _extract_regression_target(df, col):
         vals = pd.to_numeric(df[col], errors="coerce").fillna(0.0).values
     else:
         vals = np.zeros(len(df), dtype=np.float32)
-    return vals.astype(np.float32)
+    # Survival duration is measured in days (often tens of thousands).  Keep
+    # it on the same scale as the classification losses; otherwise MSE can
+    # completely drown out the binary and toxicity objectives during FL.
+    return np.clip(vals / 30000.0, 0.0, 1.0).astype(np.float32)
 
 
 def _extract_toxicity_target(df, col):

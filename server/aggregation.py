@@ -20,14 +20,23 @@ class EmptyRoundError(Exception):
 
 # ─── FedAvg ──────────────────────────────────────────────────────────────────
 
-def aggregate_fedavg(client_updates: list, sample_counts: list) -> dict:
+def aggregate_fedavg(
+    client_updates: list,
+    sample_counts: list,
+    trimming_ratio: float = 0.0,
+) -> dict:
     """
-    Canonical FedAvg with sample-proportional weighting.
+    Canonical FedAvg with sample-proportional weighting and optional
+    coordinate-wise trimmed mean for Byzantine robustness.
 
     Parameters
     ----------
-    client_updates : list[dict]  — weight dicts from each client
-    sample_counts  : list[int]   — number of local training samples per client
+    client_updates  : list[dict]  — weight dicts from each client
+    sample_counts   : list[int]   — number of local training samples per client
+    trimming_ratio  : float in [0, 0.5) — fraction to trim from each end
+                      per coordinate before averaging.  0.0 = standard FedAvg.
+                      Set to e.g. 0.1 to trim the 10% highest and 10% lowest
+                      updates per coordinate (Byzantine robustness).
 
     Returns
     -------
@@ -36,12 +45,16 @@ def aggregate_fedavg(client_updates: list, sample_counts: list) -> dict:
     Raises
     ------
     EmptyRoundError  if client_updates is empty
+    ValueError       if trimming_ratio ≥ 0.5
     """
     if not client_updates:
         raise EmptyRoundError("No client updates to aggregate.")
 
     if len(client_updates) != len(sample_counts):
         raise ValueError("client_updates and sample_counts must have the same length.")
+
+    if not 0.0 <= trimming_ratio < 0.5:
+        raise ValueError(f"trimming_ratio must be in [0, 0.5), got {trimming_ratio}")
 
     total_samples = sum(sample_counts)
     if total_samples == 0:
@@ -67,14 +80,27 @@ def aggregate_fedavg(client_updates: list, sample_counts: list) -> dict:
         contrib_arrays = [arr for _, arr in contributors]
         total_contrib = contrib_weights.sum()
 
-        # Weighted average
-        weighted_sum = np.zeros_like(contrib_arrays[0], dtype=np.float64)
-        for w, arr in zip(contrib_weights, contrib_arrays):
-            weighted_sum += (w / total_contrib) * arr.astype(np.float64)
-
-        aggregated[key] = weighted_sum.astype(np.float32)
+        if trimming_ratio > 0.0 and len(contrib_arrays) >= 4:
+            # ── Coordinate-wise trimmed mean ──────────────────────────────
+            # Stack all arrays: shape (num_clients, *param_shape)
+            stacked = np.stack(contrib_arrays, axis=0)      # (C, ...)
+            n_trim = max(1, int(len(contrib_arrays) * trimming_ratio))
+            # Sort along client axis (axis=0) per coordinate, then slice
+            sorted_stacked = np.sort(stacked, axis=0)
+            trimmed = sorted_stacked[n_trim: len(contrib_arrays) - n_trim]
+            if len(trimmed) == 0:
+                # Fallback if too few clients remain after trimming
+                trimmed = stacked
+            aggregated[key] = trimmed.mean(axis=0).astype(np.float32)
+        else:
+            # ── Standard sample-proportional weighted average ────────────────
+            weighted_sum = np.zeros_like(contrib_arrays[0], dtype=np.float64)
+            for w, arr in zip(contrib_weights, contrib_arrays):
+                weighted_sum += (w / total_contrib) * arr.astype(np.float64)
+            aggregated[key] = weighted_sum.astype(np.float32)
 
     return aggregated
+
 
 
 # ─── Momentum Smoothing ───────────────────────────────────────────────────────
@@ -201,5 +227,5 @@ def validate_global_model(
         "global_val_rmse": rmse,
         "global_tox_accuracy": tox_acc,
         "global_auc": auc,
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
     }

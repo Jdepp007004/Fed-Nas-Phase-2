@@ -88,6 +88,14 @@ class Supernet(nn.Module):
                 f"active_depth={active_depth} out of range [1, {self.max_depth}]"
             )
 
+        # Keep small experimental subnets usable with the canonical 512-wide
+        # preprocessing output.  Production models already receive exactly
+        # ``input_dim`` features, so this is a no-op in normal operation.
+        if x.shape[-1] > self.input_dim:
+            x = x[..., :self.input_dim]
+        elif x.shape[-1] < self.input_dim:
+            x = torch.nn.functional.pad(x, (0, self.input_dim - x.shape[-1]))
+
         embedding = x
         for i in range(active_depth):
             embedding = self.backbone[i](embedding)

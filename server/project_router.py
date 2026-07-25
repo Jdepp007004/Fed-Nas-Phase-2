@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import torch  # noqa: E402
 import numpy as np  # noqa: E402
-from fastapi import APIRouter, Depends, BackgroundTasks, Header  # noqa: E402
+from fastapi import APIRouter, Depends, BackgroundTasks, Header, Request  # noqa: E402
 from fastapi.responses import JSONResponse  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 
@@ -21,6 +21,25 @@ from auth_router import verify_jwt  # noqa: E402
 from aggregation import aggregate_fedavg, update_with_momentum, validate_global_model, EmptyRoundError  # noqa: E402
 from nas_controller import recommend_subnet_depth, evaluate_architecture_candidates  # noqa: E402
 from shared.model_schema import MODEL_CONFIG, SERVER_SCHEMA  # noqa: E402
+
+# ── Phase 2 infrastructure (graceful degradation when not configured) ─────────
+try:
+    from redis_state import get_state as _get_redis_state
+    _redis_state = _get_redis_state()
+except Exception:  # noqa: BLE001
+    _redis_state = None
+
+try:
+    from round_state import RoundState, RoundStateMachine
+    _HAVE_STATE_MACHINE = True
+except Exception:  # noqa: BLE001
+    _HAVE_STATE_MACHINE = False
+
+try:
+    from metrics import ACTIVE_CLIENTS, PENDING_UPDATES
+    _HAVE_METRICS = True
+except Exception:  # noqa: BLE001
+    _HAVE_METRICS = False
 
 # ── Path to models directory ──────────────────────────────────────────────────
 MODELS_DIR = os.path.join(os.path.dirname(__file__), "models")
@@ -40,6 +59,31 @@ _val_dataloader = None
 def set_val_dataloader(dl):
     global _val_dataloader
     _val_dataloader = dl
+
+
+def _dispatch_round(
+    proj_id: str,
+    updates_snapshot: list,
+    db_snapshot: dict,
+    background_tasks,
+) -> None:
+    """
+    Route the round_lifecycle call to Celery (if configured) or
+    FastAPI BackgroundTask (fallback — existing behaviour).
+    """
+    if os.getenv("CELERY_BROKER_URL"):
+        try:
+            from tasks import dispatch_round as _celery_task
+            _celery_task.delay(proj_id, updates_snapshot, db_snapshot)
+            return
+        except Exception as e:  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).warning(
+                "Celery dispatch failed, falling back to BackgroundTask: %s", e
+            )
+    # ── Fallback: FastAPI BackgroundTask (original behaviour) ─────────────────
+    background_tasks.add_task(round_lifecycle, proj_id, updates_snapshot, db_snapshot)
+
 
 
 # ─── JWT Dependency ───────────────────────────────────────────────────────────
@@ -208,11 +252,8 @@ async def post_model_update(
 
     if trigger:
         db_snapshot = read_db()
-        background_tasks.add_task(
-            round_lifecycle, proj_id,
-            list(_pending_updates.get(proj_id, [])),
-            db_snapshot,
-        )
+        updates_snapshot = list(_pending_updates.get(proj_id, []))
+        _dispatch_round(proj_id, updates_snapshot, db_snapshot, background_tasks)
         with _buffer_lock:
             _pending_updates[proj_id] = []
 
@@ -235,22 +276,28 @@ async def get_round_history(
     return JSONResponse(status_code=200, content=history)
 
 
-@router.get("/{proj_id}/approve/{user_id_to_approve}")
+@router.post("/{proj_id}/approve/{user_id_to_approve}")
 async def approve_client(
     proj_id: str,
     user_id_to_approve: str,
-    current_user: dict = Depends(_get_current_user),  # noqa: B008
+    request: Request,
 ):
-    """GET /api/projects/{proj_id}/approve/{user_id} — admin action."""
+    """
+    POST /api/projects/{proj_id}/approve/{user_id} — dashboard admin action.
+    Protected by X-Admin-Key header (must match JWT_SECRET env var).
+    No user JWT required — this is called directly from the server dashboard.
+    """
+    import os
+    admin_key = request.headers.get("X-Admin-Key", "")
+    expected  = os.environ.get("JWT_SECRET", "dev_secret_change_in_production")
+    if admin_key != expected:
+        raise _http_error(401, "Invalid or missing X-Admin-Key header.")
+
     proj = get_project(proj_id)
     if proj is None:
         raise _http_error(404, f"Project {proj_id} not found.")
 
-    # Only admin can approve
-    if current_user["sub"] != proj.get("admin_id"):
-        raise _http_error(403, "Only the project admin can approve clients.")
-
-    pending = proj.get("pending_clients", [])
+    pending   = proj.get("pending_clients", [])
     connected = proj.get("connected_clients", [])
 
     if user_id_to_approve not in pending:

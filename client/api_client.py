@@ -186,5 +186,5 @@ class APIClient:
         return self._request("GET", f"/api/projects/{proj_id}/history")
 
     def approve_client(self, proj_id: str, user_id: str) -> dict:
-        """GET /api/projects/{proj_id}/approve/{user_id}  (admin action)"""
-        return self._request("GET", f"/api/projects/{proj_id}/approve/{user_id}")
+        """POST /api/projects/{proj_id}/approve/{user_id}  (admin action)"""
+        return self._request("POST", f"/api/projects/{proj_id}/approve/{user_id}")

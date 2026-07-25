@@ -66,9 +66,14 @@ def schema():
     return SERVER_SCHEMA
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def small_supernet():
-    """Return a small Supernet instance (reduced dims for speed)."""
+    """Return a fresh small Supernet instance per test (reduced dims for speed).
+
+    scope="function" prevents state leakage: some tests (e.g. test_load_global_weights_roundtrip)
+    mutate model parameters in-place (p.fill_(1.0)), which would corrupt subsequent tests if
+    the same instance were shared across the session.
+    """
     from supernet import Supernet
     return Supernet(input_dim=32, max_depth=3, hidden_dim=16, num_toxicity_classes=4)
 

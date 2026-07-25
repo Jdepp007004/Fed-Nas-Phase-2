@@ -189,6 +189,7 @@
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
   </svg>
   <span class="app-bar-title">FL Platform — Server Dashboard</span>
+  <a href="/simulation" style="color:#fff;border:1px solid rgba(255,255,255,.55);padding:5px 10px;border-radius:16px;text-decoration:none;font-size:12px">&#9654; Live Session</a>
   <span class="app-bar-chip">v{{ server_version }}</span>
   <span class="url-chip" onclick="navigator.clipboard.writeText('{{ ngrok_url }}')"
         title="Click to copy">
@@ -265,8 +266,10 @@
               </td>
               <td>
                 {% for uid in proj.connected_clients %}
+                  {% set cuser = users | selectattr('user_id', 'equalto', uid) | first | default(none) %}
                   <span class="chip chip-green">
-                    <span class="dot dot-green"></span>{{ uid[:8] }}
+                    <span class="dot dot-green"></span>
+                    {% if cuser %}{{ cuser.username }}{% else %}{{ uid[:8] }}{% endif %}
                   </span>
                 {% endfor %}
                 {% if not proj.connected_clients %}
@@ -275,8 +278,18 @@
               </td>
               <td>
                 {% for uid in proj.pending_clients %}
-                  <a href="/api/projects/{{ proj.proj_id }}/approve/{{ uid }}"
-                     class="btn-approve">✓ {{ uid[:8] }}</a>
+                  {% set puser = users | selectattr('user_id', 'equalto', uid) | first | default(none) %}
+                  <button id="approve-{{ uid }}"
+                          class="btn-approve"
+                          onclick="approveClient('{{ proj.proj_id }}', '{{ uid }}')"
+                  >
+                    ✓
+                    {% if puser %}
+                      {{ puser.username }} ({{ puser.hospital_name }})
+                    {% else %}
+                      {{ uid[:8] }}
+                    {% endif %}
+                  </button>
                 {% endfor %}
                 {% if not proj.pending_clients %}
                   <span style="color:var(--md-on-surface-var);font-size:12px">—</span>
@@ -387,6 +400,34 @@
 
 </main>
 
-<script>setTimeout(() => location.reload(), 15000);</script>
+<script>
+  // Admin key is embedded at render time — only accessible to whoever can load this dashboard
+  const ADMIN_KEY = '{{ jwt_secret }}';
+  const BASE_URL  = '';
+
+  async function approveClient(projId, userId) {
+    const btn = document.getElementById('approve-' + userId);
+    if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
+    try {
+      const res = await fetch(`${BASE_URL}/api/projects/${projId}/approve/${userId}`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': ADMIN_KEY, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        if (btn) { btn.textContent = '✓ Approved'; btn.style.color = 'var(--md-success)'; btn.style.borderColor = 'var(--md-success)'; }
+        setTimeout(() => location.reload(), 800);
+      } else {
+        const err = await res.json();
+        alert('Approve failed: ' + (err.detail || res.status));
+        if (btn) { btn.disabled = false; btn.textContent = '✓ Approve'; }
+      }
+    } catch(e) {
+      alert('Network error: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Approve'; }
+    }
+  }
+
+  setTimeout(() => location.reload(), 15000);
+</script>
 </body>
 </html>

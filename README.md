@@ -229,6 +229,31 @@ NGROK_AUTH_TOKEN=your_ngrok_token
 
 ---
 
+## Demo and benchmark
+
+After starting the server, open `http://localhost:8000/demo` (or click **Demo
+mode** in the operator dashboard). It starts four local devices using the
+supplied `data/client_*.csv` partitions and displays local training loss,
+held-out validation AUC, and the best validation AUC reached so far. Demo
+state is in-memory only and does not modify an active project.
+
+Run a quick benchmark before presenting:
+
+```powershell
+python benchmark_platform.py --rounds 6 --local-epochs 1
+```
+
+For a reportable experiment, repeat fixed seeds:
+
+```powershell
+python benchmark_platform.py --rounds 20 --local-epochs 3 --seeds 42 43 44
+```
+
+The benchmark uses one held-out partition from every client and compares the
+full FL Platform (Supernet, FedProx, FedAvg, server momentum) with plain
+FedAvg, a normal 1-D CNN, logistic regression, random forest, and histogram
+gradient boosting. It writes full per-round metrics to JSON.
+
 ## Testing
 
 ```bash

@@ -171,7 +171,9 @@ COLUMN_TYPES = {
     "tumor_grade": "str",
     "treatment_type": "str",
     "overall_survival": "float",
-    "treatment_outcome": "int",
+    # Clinical exports use outcome labels; the data loader maps these strings
+    # to the four model classes.
+    "treatment_outcome": "str",
 }
 
 MIN_SAMPLES = 100  # Minimum rows required to participate

@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "fl-platform-server"
+    static_configs:
+      - targets: ["fl-server:8000"]
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  - job_name: "celery-worker"
+    static_configs:
+      - targets: ["fl-worker:9000"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+    # Note: enable flower or celery-exporter sidecar to expose worker metrics

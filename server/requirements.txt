@@ -1,14 +1,40 @@
+# ── Core API framework ────────────────────────────────────────────────────────
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.0.0
+Jinja2>=3.1.0
+python-multipart>=0.0.6
+aiofiles>=23.0.0
+
+# ── Auth & Security ───────────────────────────────────────────────────────────
 bcrypt>=4.0.0
 PyJWT>=2.8.0
+cryptography>=41.0.0
+
+# ── Tunnel ───────────────────────────────────────────────────────────────────
 pyngrok>=7.0.0
+
+# ── ML ───────────────────────────────────────────────────────────────────────
 torch>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 pandas>=2.0.0
-cryptography>=41.0.0
-Jinja2>=3.1.0
-python-multipart>=0.0.6
-aiofiles>=23.0.0
+
+# ── Phase 2A: PostgreSQL + Alembic ───────────────────────────────────────────
+sqlalchemy>=2.0.36            # 2.0.36+ required for Python 3.13 compatibility
+alembic>=1.13.2
+psycopg2-binary>=2.9.0        # PostgreSQL driver
+
+# ── Phase 2A: Redis state ────────────────────────────────────────────────────
+redis>=5.0.0                   # redis-py client
+
+# ── Phase 2B: Celery task queue ──────────────────────────────────────────────
+celery[redis]>=5.3.0           # Celery + Redis transport
+
+# ── Phase 2C: Observability ───────────────────────────────────────────────────
+prometheus-client>=0.19.0      # Prometheus scrape endpoint
+opentelemetry-sdk>=1.22.0      # OTel trace SDK
+opentelemetry-exporter-otlp>=1.22.0   # OTLP HTTP exporter
+
+# ── Optional: S3 model storage ────────────────────────────────────────────────
+# boto3>=1.34.0                # Uncomment to enable S3 storage backend
